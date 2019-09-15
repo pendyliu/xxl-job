@@ -12,7 +12,7 @@ import java.util.List;
 * @Author: pendy
 * @Date:  
 */
-public interface IFieldsMap {
+public interface IFieldsMap<T> {
     /**
      * 从伙伴接口获取表结构并创建放到本地缓存中
      * @param jsonObject
@@ -23,13 +23,13 @@ public interface IFieldsMap {
      * 填充本地缓存中的数据表
      * @param paramJson
      */
-    void checkOrgIsExists(JSONObject paramJson);
+    String getItemId(JSONObject paramJson);
 
     /**
      * 从万古接口中读取数据
      * @param xml
      * @return
      */
-    List<Team_Name> readStringXml(String xml);
+    List<T> readStringXml(String xml);
 
 }

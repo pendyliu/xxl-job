@@ -4,16 +4,24 @@ import cn.hutool.core.text.UnicodeUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.Header;
 import cn.hutool.http.HttpRequest;
+import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.xxl.job.core.log.XxlJobLogger;
 import com.xxl.job.executor.Models.HbTablesId;
+import com.xxl.job.executor.Models.KeyValueModel;
 import com.xxl.job.executor.Models.Team_Name;
 import com.xxl.job.executor.core.config.HuoBanConfig;
 import com.xxl.job.executor.service.jobhandler.PersonHbJobHandler;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.xxl.job.executor.service.jobhandler.PersonHbJobHandler.tableStuckCache;
+
 @Component
-public class HuobanServ {
+public class HuobanServ<T>{
     static Team_Name team_name = new Team_Name();
     public void getSpaces() {
         String result = HttpRequest.get(HuoBanConfig.props.getProperty("HuoBanBaseURL")+"spaces/joined").
@@ -38,28 +46,35 @@ public class HuobanServ {
         return result;
     }
 
-    public static void setFieldsMap(String tableId,IFieldsMap iFieldsMap){
-        JSONObject result=getTables(HbTablesId.team_name);
-        iFieldsMap.createFieldsIdMap(result);
-    }
+    /**
+     * 从伙伴接口中获取字段ID映射表
+     * @param tableId
+     * @param t
+     */
+    public void setFieldsMap(String tableId,Class<T> t){
+        try {
 
-    public static void setDataToCacheTable(JSONObject jsonObject,IFieldsMap iFieldsMap){
-        iFieldsMap.checkOrgIsExists(jsonObject);
+            IFieldsMap iFieldsMap= (IFieldsMap) t.newInstance();
+            JSONObject result=getTables(tableId);
+            iFieldsMap.createFieldsIdMap(result);
+        } catch (InstantiationException e) {
+            XxlJobLogger.log(e.getMessage());
+        } catch (IllegalAccessException e) {
+            XxlJobLogger.log(e.getMessage());
+        }
     }
-
 
     /**
-     * 班组信息字段匹配
-     *
-     * @param result
+     * 获取ItemId到缓存中
+     * @param tableId
+     * @param keyValueModel
      */
-    private static void fieldsMap(JSONObject result) {
-        TeamNameImpl.setFildsMap(result,team_name);
-        /**
-         * 将表结构对象存放到缓存当中
-         */
-        PersonHbJobHandler.tableStuckCache.put("team_name", team_name);
-    }
-
+//    public void setItemIdToCache(String tableId, KeyValueModel keyValueModel){
+//        String url=HuoBanConfig.props.getProperty("HuoBanBaseURL")+"v2/item/table/{}/find";
+//        JSONObject result=HttpRequest.post(StrUtil.format(url,tableId))
+//                .header(Header.CONTENT_TYPE,"application/json")
+//                .header("X-Huoban-Ticket",HuoBanConfig.getTicketJson().getStr("ticket"))
+//                .body(JSONUtil.parse(keyValueModel))
+//    }
 
 }

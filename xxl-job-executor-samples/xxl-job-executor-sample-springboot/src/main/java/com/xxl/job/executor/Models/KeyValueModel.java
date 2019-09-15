@@ -9,6 +9,7 @@ import lombok.Data;
 public class KeyValueModel implements Cloneable {
     String field_id;
     Object field_value;
+    Object item_id;
 
     @Override
     public Object clone() throws CloneNotSupportedException {

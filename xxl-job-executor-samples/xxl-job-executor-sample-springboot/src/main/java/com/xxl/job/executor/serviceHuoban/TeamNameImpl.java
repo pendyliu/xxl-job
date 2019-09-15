@@ -8,10 +8,11 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.xxl.job.core.log.XxlJobLogger;
+import com.xxl.job.executor.Models.Company;
+import com.xxl.job.executor.Models.HbTablesId;
 import com.xxl.job.executor.Models.KeyValueModel;
 import com.xxl.job.executor.Models.Team_Name;
 import com.xxl.job.executor.core.config.HuoBanConfig;
-import com.xxl.job.executor.service.jobhandler.PersonHbJobHandler;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
@@ -21,7 +22,12 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class TeamNameImpl implements IFieldsMap {
+import static com.xxl.job.executor.service.jobhandler.PersonHbJobHandler.tableStuckCache;
+
+/**
+ * @author pendy
+ */
+public class TeamNameImpl extends BaseHuoBanServ implements IFieldsMap {
     static Team_Name team_name = new Team_Name();
 
     @Override
@@ -30,17 +36,27 @@ public class TeamNameImpl implements IFieldsMap {
         /**
          * 将表结构对象存放到缓存当中
          */
-        PersonHbJobHandler.tableStuckCache.put("team_name", team_name);
+        tableStuckCache.put("team_name", team_name);
     }
 
     @Override
-    public void checkOrgIsExists(JSONObject paramJson) {
+    public String getItemId(JSONObject paramJson) {
         String tableId = paramJson.getStr("tableId");
         try {
-            JSONArray andWhere = JSONArray.class.newInstance().put(JSONUtil.createObj().put("field_id", paramJson.get("field_id"))
-                    .put("query", paramJson.get("field_value")));
-            paramJson.put("where", andWhere).remove("field_id");
+            JSONArray andWhere = JSONArray.class.newInstance().put(JSONUtil.createObj().put("field", paramJson.get("field_id"))
+                    .put("query", JSONUtil.createObj().put("eq", paramJson.get("field_value"))));
+            paramJson.put("where", JSONUtil.createObj().put("and", andWhere)).remove("field");
+            if (tableStuckCache.get("itemsId") == null) {
+                List<KeyValueModel> itemIds = new ArrayList<>();
+                tableStuckCache.put("itemsId", itemIds);
+            }
+            JSONObject itemsId = JSONUtil.parseObj(tableStuckCache.get("itemsId"));
+            if (itemsId == null) {
+
+            }
             paramJson.remove("query");
+            paramJson.remove("tableId");
+            paramJson.remove("field_value");
         } catch (Exception e) {
             XxlJobLogger.log(e.getMessage());
         }
@@ -48,12 +64,14 @@ public class TeamNameImpl implements IFieldsMap {
                 HuoBanConfig.props.getProperty("HuoBanBaseURL") + "v2/item/table/{}/find", tableId))
                 .header(Header.CONTENT_TYPE, "application/json")
                 .header("X-Huoban-Ticket", HuoBanConfig.getTicketJson().get("ticket").toString())
-                .body(StrUtil.format("{table_id:{}}", tableId))
+                .body(paramJson.toString())
                 .execute().body()));
+
+        return ((JSONObject) ((JSONArray) result.get("items")).get(0)).get("item_id").toString();
     }
 
     @Override
-    public List<Team_Name> readStringXml(String xml){
+    public List<Team_Name> readStringXml(String xml) {
         List<Team_Name> team_names = new ArrayList<>();
         try {
             Document doc = null;
@@ -71,7 +89,7 @@ public class TeamNameImpl implements IFieldsMap {
                 // 获取子节点STAFF下的子节点ROW
                 Iterator iters = recordEle.elementIterator("ROW");
                 // 遍历ROW节点下的Response节点
-                Team_Name baseObj=(Team_Name) PersonHbJobHandler.tableStuckCache.get("team_name");
+                Team_Name baseObj = (Team_Name) tableStuckCache.get("team_name");
 
                 while (iters.hasNext()) {
                     Team_Name team_name = new Team_Name();
@@ -85,7 +103,10 @@ public class TeamNameImpl implements IFieldsMap {
                     Element itemEle = (Element) iters.next();
 
                     // 拿到STAFF下的子节点ROW下的字节点组织节点的值
-                    team_name.getCompany_Name().setField_value(itemEle.elementText(("BRANCH")));
+                    team_name.getCompany_Name().setField_value(itemEle.elementText("BRANCH"));
+                    getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.comany).
+                            put("field_id", ((Company) tableStuckCache.get("company")).getCompany_code().getField_id()).
+                            put("field_value", itemEle.elementText("BRANCH")));
                     team_name.getFir_Depart().setField_value(itemEle.elementText("DEPARTMENT"));
                     team_name.getSec_Depart().setField_value(itemEle.elementText("SECTION"));
                     team_name.getT_Class().setField_value(itemEle.elementText("SUB_SECTION"));
@@ -125,7 +146,7 @@ public class TeamNameImpl implements IFieldsMap {
             XxlJobLogger.log(e.getMessage());
         } catch (Exception e) {
             XxlJobLogger.log(e.getMessage());
-        }finally {
+        } finally {
 
         }
         return team_names;
