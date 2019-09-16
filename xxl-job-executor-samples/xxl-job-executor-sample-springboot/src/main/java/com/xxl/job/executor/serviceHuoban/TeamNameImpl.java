@@ -89,24 +89,35 @@ public class TeamNameImpl extends BaseHuoBanServ implements IFieldsMap {
                 // 获取子节点STAFF下的子节点ROW
                 Iterator iters = recordEle.elementIterator("ROW");
                 // 遍历ROW节点下的Response节点
-                Team_Name baseObj = (Team_Name) tableStuckCache.get("team_name");
+                Team_Name teamNameStruc = (Team_Name) tableStuckCache.get("team_name");
+                Company companyStruc = (Company) tableStuckCache.get("company");
 
                 while (iters.hasNext()) {
                     Team_Name team_name = new Team_Name();
-                    team_name.setCompany_Name((KeyValueModel) baseObj.getCompany_Name().clone());
-                    team_name.setFir_Depart((KeyValueModel) baseObj.getFir_Depart().clone());
-                    team_name.setSec_Depart((KeyValueModel) baseObj.getSec_Depart().clone());
-                    team_name.setT_Class((KeyValueModel) baseObj.getT_Class().clone());
-                    team_name.setGroup((KeyValueModel) baseObj.getGroup().clone());
-                    team_name.setTeam_Code((KeyValueModel) baseObj.getTeam_Code().clone());
-                    team_name.setLeaders((KeyValueModel) baseObj.getLeaders().clone());
+                    Company company = new Company();
+                    team_name.setCompany_Name((KeyValueModel) teamNameStruc.getCompany_Name().clone());
+                    team_name.setFir_Depart((KeyValueModel) teamNameStruc.getFir_Depart().clone());
+                    team_name.setSec_Depart((KeyValueModel) teamNameStruc.getSec_Depart().clone());
+                    team_name.setT_Class((KeyValueModel) teamNameStruc.getT_Class().clone());
+                    team_name.setGroup((KeyValueModel) teamNameStruc.getGroup().clone());
+                    team_name.setTeam_Code((KeyValueModel) teamNameStruc.getTeam_Code().clone());
+                    team_name.setLeaders((KeyValueModel) teamNameStruc.getLeaders().clone());
+
+                    company.setCompany_code((KeyValueModel) companyStruc.getCompany_code().clone());
+                    company.setCompany_name((KeyValueModel)companyStruc.getCompany_name().clone());
+                    company.setCompany_leaders((KeyValueModel)companyStruc.getCompany_leaders().clone());
+
+
                     Element itemEle = (Element) iters.next();
 
                     // 拿到STAFF下的子节点ROW下的字节点组织节点的值
                     team_name.getCompany_Name().setField_value(itemEle.elementText("BRANCH"));
-                    getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.comany).
+                    company.getCompany_code().setField_value(itemEle.elementText("BRANCH"));
+                    company.getCompany_name().setField_value(itemEle.elementText("BRANCH_DESCRIPTION"));
+                    String itemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.comany).
                             put("field_id", ((Company) tableStuckCache.get("company")).getCompany_code().getField_id()).
-                            put("field_value", itemEle.elementText("BRANCH")));
+                            put("field_value", itemEle.elementText("BRANCH")),new CompanyImpl(),itemEle);
+
                     team_name.getFir_Depart().setField_value(itemEle.elementText("DEPARTMENT"));
                     team_name.getSec_Depart().setField_value(itemEle.elementText("SECTION"));
                     team_name.getT_Class().setField_value(itemEle.elementText("SUB_SECTION"));
@@ -151,6 +162,12 @@ public class TeamNameImpl extends BaseHuoBanServ implements IFieldsMap {
         }
         return team_names;
     }
+
+    @Override
+    public JSONObject insertTable(Element element) {
+        return null;
+    }
+
 
     /**
      * 设置字段与字段ID的映射关系

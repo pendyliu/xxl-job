@@ -8,6 +8,7 @@ public class Team_Name implements Cloneable {
      * 公司名称
      */
     KeyValueModel company_Name;
+
     /**
      * 一级部门
      */

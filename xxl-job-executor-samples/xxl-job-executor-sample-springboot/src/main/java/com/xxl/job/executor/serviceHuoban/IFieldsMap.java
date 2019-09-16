@@ -2,6 +2,7 @@ package com.xxl.job.executor.serviceHuoban;
 
 import cn.hutool.json.JSONObject;
 import com.xxl.job.executor.Models.Team_Name;
+import org.dom4j.Element;
 
 import java.util.List;
 
@@ -31,5 +32,12 @@ public interface IFieldsMap<T> {
      * @return
      */
     List<T> readStringXml(String xml);
+
+    /**
+     * 向伙伴系统创建数据
+     * @param element
+     * @return
+     */
+    JSONObject insertTable(Element element);
 
 }

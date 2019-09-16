@@ -7,8 +7,17 @@ import lombok.Data;
  */
 @Data
 public class KeyValueModel implements Cloneable {
+    /**
+     * 字段ID
+     */
     String field_id;
+    /**
+     * 字段值
+     */
     Object field_value;
+    /**
+     * 关联ID
+     */
     Object item_id;
 
     @Override
