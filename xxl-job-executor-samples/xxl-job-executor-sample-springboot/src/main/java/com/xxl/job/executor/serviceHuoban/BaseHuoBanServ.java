@@ -4,11 +4,11 @@ import cn.hutool.core.text.UnicodeUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.Header;
 import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.xxl.job.core.log.XxlJobLogger;
-import com.xxl.job.executor.Models.HbTablesId;
 import com.xxl.job.executor.core.config.HuoBanConfig;
 import org.dom4j.Element;
 
@@ -24,10 +24,9 @@ public abstract class BaseHuoBanServ {
      * @param paramJson 有几个Key{ tableId、field_id、field_value}
      * @return
      */
-    public String getItemsId(JSONObject paramJson, IFieldsMap iFieldsMap, Element element) {
+    public String getItemsId(JSONObject paramJson, IHuoBanService iHuoBanService, Element element) {
         String tableId = paramJson.getStr("tableId");
         String field_code = paramJson.get("field_value").toString();
-        paramJson.putOpt("field_value","XHJY2");
         try {
             JSONArray andWhere = JSONArray.class.newInstance().put(JSONUtil.createObj().put("field", paramJson.get("field_id"))
                     .put("query", JSONUtil.createObj().put("eq", paramJson.get("field_value"))));
@@ -45,12 +44,20 @@ public abstract class BaseHuoBanServ {
                 .header("X-Huoban-Ticket", HuoBanConfig.getTicketJson().get("ticket").toString())
                 .body(paramJson.toString())
                 .execute().body()));
-        String itemId = ((JSONObject) ((JSONArray) result.get("items")).get(0)).get("item_id").toString();
+        String itemId = ((JSONArray) result.get("items")).size() > 0 ?
+                ((JSONObject) ((JSONArray) result.get("items")).get(0)).get("item_id").toString() : "";
         if (itemId.length() > 0) {
+            String cnName = StrUtil.split(((JSONObject) ((JSONArray) result.get("items")).get(0)).get("title").toString(), "")[0];
+            if (!cnName.equals(element.elementText("BRANCH_DESCRIPTION"))) {
+                //如果中文名称不一样的话就去更新伙伴系统数据
+               if ( iHuoBanService.updateTable(result, element)==200){
+                   XxlJobLogger.log(element.elementText("BRANCH")+"组织名称更新为："+element.elementText("BRANCH_DESCRIPTION"));
+               }
+            }
             ((Map) tableStuckCache.get("itemsId")).put(field_code, itemId);
         } else {
-           result= iFieldsMap.insertTable(element);
-           itemId=((JSONObject) ((JSONArray) result.get("items")).get(0)).get("item_id").toString();
+            result = iHuoBanService.insertTable(element);
+            itemId = ((JSONObject) ((JSONArray) result.get("items")).get(0)).get("item_id").toString();
         }
         return itemId;
     }
@@ -61,26 +68,44 @@ public abstract class BaseHuoBanServ {
      * @param paramJson
      * @return 如果缓存中存在值就返回缓存内容，如果缓存中没有就直接从接口里面去获取数据
      */
-    public String getCacheItemsId(JSONObject paramJson, IFieldsMap iFieldsMap, Element element) {
+    public String getCacheItemsId(JSONObject paramJson, IHuoBanService iHuoBanService, Element element) {
         if (tableStuckCache.get("itemsId") == null) {
             Map<String, Object> itemIds = new HashMap<>();
             tableStuckCache.put("itemsId", itemIds);
         }
         Object itemId = ((Map<String, Object>) tableStuckCache.get("itemsId")).get(paramJson.get("field_value"));
-        return itemId == null ? getItemsId(paramJson, iFieldsMap, element) : itemId.toString();
+        return itemId == null ? getItemsId(paramJson, iHuoBanService, element) : itemId.toString();
     }
 
     /**
      * 向伙伴系统创建数据
+     *
      * @param paramJson
      * @return
      */
-    public JSONObject insertTable(JSONObject paramJson) {
-        JSONObject reuslt= JSONUtil.parseObj(UnicodeUtil.toString(HttpRequest.post(HuoBanConfig.props.getStr(StrUtil.format(
-                HuoBanConfig.props.getProperty("HuoBanBaseURL") + "v2/item/table/{}", HbTablesId.comany)))
-                .header(Header.CONTENT_TYPE,"application/json")
+    public JSONObject insertTable(JSONObject paramJson, String tableId) {
+        JSONObject reuslt = JSONUtil.parseObj(UnicodeUtil.toString(HttpRequest.post(
+                StrUtil.format(HuoBanConfig.props.getProperty("HuoBanBaseURL") + "v2/item/table/{}", tableId))
+                .header(Header.CONTENT_TYPE, "application/json")
                 .header("X-Huoban-Ticket", HuoBanConfig.getTicketJson().get("ticket").toString())
-                .body(paramJson).execute().body()));
+                .body(paramJson.toString()).execute().body()));
         return reuslt;
     }
+
+    /**
+     * 批量更新伙伴系统数据
+     *
+     * @param tableId
+     * @param paramJson
+     * @return
+     */
+    public int updateTable(String tableId, JSONObject paramJson) {
+        String url = StrUtil.format(HuoBanConfig.props.getProperty("HuoBanBaseURL") + "/v2/item/table/{}/update", tableId);
+        HttpResponse response = HttpRequest.post(url).
+                header(Header.CONTENT_TYPE, "application/json").
+                header("X-Huoban-Ticket", HuoBanConfig.getTicketJson().get("ticket").toString()).
+                body(paramJson.toString()).execute();
+        return response.getStatus();
+    }
+
 }

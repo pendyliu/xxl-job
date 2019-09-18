@@ -23,13 +23,13 @@ import java.util.List;
 @Component
 public class PersonHbJobHandler extends IJobHandler {
     public static Cache<String, Object> tableStuckCache = CacheUtil.newFIFOCache(6);
-    IFieldsMap iFieldsMap;
+    IHuoBanService iHuoBanService;
 
     @Override
     public ReturnT<String> execute(String param) throws Exception {
         XxlJobLogger.log("GetHuoban");
         HuobanServ huobanServ=new HuobanServ();
-        iFieldsMap=new TeamNameImpl();
+        iHuoBanService =new TeamNameImpl();
         //获取所有模型字段ID对照表存储到缓存中
         setAllFieldsMap(huobanServ);
         Object startDate = ((JSONObject) JSONUtil.parseObj(param).get("v_dates")).get("startDate");
@@ -38,13 +38,13 @@ public class PersonHbJobHandler extends IJobHandler {
         String xml = VantopServ.PER_INF_WBS_ORG(startDate == null ? DateUtil.format(DateTime.now(), "dd/MM/yyyy") : startDate.toString(),
                 endDate == null ? DateUtil.format(DateTime.now(), "dd/MM/yyyy") : endDate.toString());
         //读取组织结构
-        List<Team_Name> team_names = iFieldsMap.readStringXml(xml);
+        List<Team_Name> team_names = iHuoBanService.readStringXml(xml);
 
 
         JSONObject paramJson = JSONObject.class.newInstance();
         paramJson.put("field_id", "title");
         paramJson.put("query",JSONObject.class.newInstance().put("eq",""));
-        iFieldsMap.getItemId(JSONObject.class.newInstance().put("tableId", HbTablesId.comany));
+        iHuoBanService.getItemId(JSONObject.class.newInstance().put("tableId", HbTablesId.comany));
 
         SUCCESS.setMsg("获取Tick成功:" + HuoBanConfig.getTicketJson().getStr("ticket") + "有效期截止于："
                 + HuoBanConfig.getTicketJson().getStr("expire_at"));

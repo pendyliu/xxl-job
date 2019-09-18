@@ -1,7 +1,6 @@
 package com.xxl.job.executor.serviceHuoban;
 
 import cn.hutool.json.JSONObject;
-import com.xxl.job.executor.Models.Team_Name;
 import org.dom4j.Element;
 
 import java.util.List;
@@ -13,7 +12,7 @@ import java.util.List;
 * @Author: pendy
 * @Date:  
 */
-public interface IFieldsMap<T> {
+public interface IHuoBanService<T> {
     /**
      * 从伙伴接口获取表结构并创建放到本地缓存中
      * @param jsonObject
@@ -35,9 +34,15 @@ public interface IFieldsMap<T> {
 
     /**
      * 向伙伴系统创建数据
-     * @param element
      * @return
      */
     JSONObject insertTable(Element element);
+
+    /**
+     * 批量更新伙伴系统数据
+     * @param jsonObject
+     * @return
+     */
+    int updateTable(JSONObject jsonObject,Element element);
 
 }

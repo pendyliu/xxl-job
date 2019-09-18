@@ -8,10 +8,7 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.xxl.job.core.log.XxlJobLogger;
-import com.xxl.job.executor.Models.Company;
-import com.xxl.job.executor.Models.HbTablesId;
-import com.xxl.job.executor.Models.KeyValueModel;
-import com.xxl.job.executor.Models.Team_Name;
+import com.xxl.job.executor.Models.*;
 import com.xxl.job.executor.core.config.HuoBanConfig;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
@@ -27,7 +24,7 @@ import static com.xxl.job.executor.service.jobhandler.PersonHbJobHandler.tableSt
 /**
  * @author pendy
  */
-public class TeamNameImpl extends BaseHuoBanServ implements IFieldsMap {
+public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
     static Team_Name team_name = new Team_Name();
 
     @Override
@@ -104,21 +101,27 @@ public class TeamNameImpl extends BaseHuoBanServ implements IFieldsMap {
                     team_name.setLeaders((KeyValueModel) teamNameStruc.getLeaders().clone());
 
                     company.setCompany_code((KeyValueModel) companyStruc.getCompany_code().clone());
-                    company.setCompany_name((KeyValueModel)companyStruc.getCompany_name().clone());
-                    company.setCompany_leaders((KeyValueModel)companyStruc.getCompany_leaders().clone());
+                    company.setCompany_name((KeyValueModel) companyStruc.getCompany_name().clone());
+                    company.setCompany_leaders((KeyValueModel) companyStruc.getCompany_leaders().clone());
 
 
                     Element itemEle = (Element) iters.next();
-
+                    //把当前节点元素存放到缓存当中
+                    tableStuckCache.put("itemEle", itemEle);
                     // 拿到STAFF下的子节点ROW下的字节点组织节点的值
                     team_name.getCompany_Name().setField_value(itemEle.elementText("BRANCH"));
-                    company.getCompany_code().setField_value(itemEle.elementText("BRANCH"));
-                    company.getCompany_name().setField_value(itemEle.elementText("BRANCH_DESCRIPTION"));
-                    String itemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.comany).
+
+                    String companyItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.comany).
                             put("field_id", ((Company) tableStuckCache.get("company")).getCompany_code().getField_id()).
-                            put("field_value", itemEle.elementText("BRANCH")),new CompanyImpl(),itemEle);
+                            put("field_value", itemEle.elementText("BRANCH")), new CompanyImpl(), itemEle);
+                    team_name.getCompany_Name().setField_value(companyItemId);
 
                     team_name.getFir_Depart().setField_value(itemEle.elementText("DEPARTMENT"));
+                    String firDepartMentItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.depment)
+                            .put("field_id", ((Fir_Depart) tableStuckCache.get("firDepartMent")).getFir_depart().getField_id())
+                            .put("field_value", itemEle.elementText("DEPARTMENT")), new FirDepartMentImpl(), itemEle);
+                    team_name.getFir_Depart().setField_value(firDepartMentItemId);
+
                     team_name.getSec_Depart().setField_value(itemEle.elementText("SECTION"));
                     team_name.getT_Class().setField_value(itemEle.elementText("SUB_SECTION"));
                     team_name.getGroup().setField_value(itemEle.elementText("CITY"));
@@ -166,6 +169,11 @@ public class TeamNameImpl extends BaseHuoBanServ implements IFieldsMap {
     @Override
     public JSONObject insertTable(Element element) {
         return null;
+    }
+
+    @Override
+    public int updateTable(JSONObject jsonObject, Element element) {
+        return 0;
     }
 
 
