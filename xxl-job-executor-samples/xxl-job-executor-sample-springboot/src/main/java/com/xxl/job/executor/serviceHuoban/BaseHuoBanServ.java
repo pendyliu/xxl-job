@@ -108,4 +108,21 @@ public abstract class BaseHuoBanServ {
         return response.getStatus();
     }
 
+
+    /**
+     * 获取表结构
+     *
+     * @param tableId
+     * @return
+     */
+    public static JSONObject getTables(String tableId) {
+        String url = StrUtil.format(HuoBanConfig.props.getProperty("HuoBanBaseURL") + "v2/table/{}", tableId);
+        JSONObject result = JSONUtil.parseObj(UnicodeUtil.toString(HttpRequest.get(url).header(Header.CONTENT_TYPE, "application/json")
+                .header(Header.HOST, "api.huoban.com")
+                .header(Header.ACCEPT_CHARSET, "utf-8")
+                .header("X-Huoban-Ticket", HuoBanConfig.getTicketJson().getStr("ticket"))
+                .execute().body()));
+        return result;
+    }
+
 }

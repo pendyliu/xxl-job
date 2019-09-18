@@ -15,9 +15,9 @@ import java.util.List;
 public interface IHuoBanService<T> {
     /**
      * 从伙伴接口获取表结构并创建放到本地缓存中
-     * @param jsonObject
+     * @param
      */
-    void createFieldsIdMap(JSONObject jsonObject);
+    void createFieldsIdMap();
 
     /**
      * 填充本地缓存中的数据表

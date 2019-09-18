@@ -28,12 +28,15 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
     static Team_Name team_name = new Team_Name();
 
     @Override
-    public void createFieldsIdMap(JSONObject jsonObject) {
-        setFildsMap(jsonObject, team_name);
-        /**
-         * 将表结构对象存放到缓存当中
-         */
-        tableStuckCache.put("team_name", team_name);
+    public void createFieldsIdMap() {
+        if (tableStuckCache.get("team_name") == null) {
+            JSONObject jsonObject = getTables(HbTablesId.team_name);
+            setFildsMap(jsonObject, team_name);
+            /**
+             * 将表结构对象存放到缓存当中
+             */
+            tableStuckCache.put("team_name", team_name);
+        }
     }
 
     @Override

@@ -22,7 +22,7 @@ import java.util.List;
 @JobHandler(value = "PersonHbJobHandler")
 @Component
 public class PersonHbJobHandler extends IJobHandler {
-    public static Cache<String, Object> tableStuckCache = CacheUtil.newFIFOCache(6);
+    public static Cache<String, Object> tableStuckCache = CacheUtil.newFIFOCache(12);
     IHuoBanService iHuoBanService;
 
     @Override
@@ -57,9 +57,9 @@ public class PersonHbJobHandler extends IJobHandler {
      */
     private void setAllFieldsMap(HuobanServ huobanServ) {
         //从伙伴获取班组表结构字段ID
-        huobanServ.setFieldsMap(HbTablesId.team_name,TeamNameImpl.class);
+        huobanServ.setFieldsMap(TeamNameImpl.class);
         //从伙伴接口获取公司表结构字段ID
-        huobanServ.setFieldsMap(HbTablesId.comany,CompanyImpl.class);
+        huobanServ.setFieldsMap(CompanyImpl.class);
     }
 
 }

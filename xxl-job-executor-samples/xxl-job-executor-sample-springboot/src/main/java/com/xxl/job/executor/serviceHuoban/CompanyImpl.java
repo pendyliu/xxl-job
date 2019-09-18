@@ -21,12 +21,15 @@ public class CompanyImpl extends BaseHuoBanServ implements IHuoBanService<Compan
     static Company company = new Company();
 
     @Override
-    public void createFieldsIdMap(JSONObject jsonObject) {
-        setFildsMap(jsonObject, company);
-        /**
-         * 将表结构对象存放到缓存当中
-         */
-        tableStuckCache.put("company", company);
+    public void createFieldsIdMap() {
+        if (tableStuckCache.get("company") == null) {
+            JSONObject jsonObject = getTables(HbTablesId.comany);
+            setFildsMap(jsonObject, company);
+            /**
+             * 将表结构对象存放到缓存当中
+             */
+            tableStuckCache.put("company", company);
+        }
     }
 
     @Override
@@ -69,7 +72,7 @@ public class CompanyImpl extends BaseHuoBanServ implements IHuoBanService<Compan
      * @param jsonObject
      * @param company
      */
-    static void setFildsMap(JSONObject jsonObject, Company company) {
+    void setFildsMap(JSONObject jsonObject, Company company) {
         for (int i = 0; i < ((JSONArray) jsonObject.get("field_layout")).size(); i++) {
             for (Object objects : (JSONArray) jsonObject.get("fields")
                     ) {

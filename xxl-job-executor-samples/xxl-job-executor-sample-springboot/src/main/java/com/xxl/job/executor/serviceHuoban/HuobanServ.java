@@ -41,15 +41,13 @@ public class HuobanServ<T> {
 
     /**
      * 从伙伴接口中获取字段ID映射表
-     *
-     * @param tableId
      * @param t
      */
-    public void setFieldsMap(String tableId, Class<T> t) {
+    public void setFieldsMap( Class<T> t) {
         try {
             IHuoBanService iHuoBanService = (IHuoBanService) t.newInstance();
-            JSONObject result = getTables(tableId);
-            iHuoBanService.createFieldsIdMap(result);
+//            JSONObject result = getTables(tableId);
+            iHuoBanService.createFieldsIdMap();
         } catch (InstantiationException e) {
             XxlJobLogger.log(e.getMessage());
         } catch (IllegalAccessException e) {
