@@ -2,12 +2,15 @@ package com.xxl.job.executor.serviceHuoban;
 
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
+import com.xxl.job.executor.Models.Company;
 import com.xxl.job.executor.Models.Fir_Depart;
 import com.xxl.job.executor.Models.HbTablesId;
 import com.xxl.job.executor.Models.KeyValueModel;
 import org.dom4j.Element;
 
 import java.util.List;
+import java.util.Map;
 
 import static com.xxl.job.executor.service.jobhandler.PersonHbJobHandler.tableStuckCache;
 
@@ -35,19 +38,35 @@ public class FirDepartMentImpl extends BaseHuoBanServ implements IHuoBanService 
 
     @Override
     public JSONObject insertTable(Element element) {
-        return null;
+        String tableId = HbTablesId.depment;
+        Fir_Depart fir_depart = (Fir_Depart) tableStuckCache.get("fir_depart");
+        JSONObject paramJson = JSONUtil.createObj().put("fields", JSONUtil.createObj().
+                put(fir_depart.getCompany_name().getField_id(),
+                        JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get("itemsId"))).get(element.elementText("BRANCH"))).get("itemId")))
+                .put(fir_depart.getDepart_code().getField_id(), "A9999".equals(element.elementText("DEPARTMENT")) ?
+                        element.elementText("BRANCH") + "b1" : element.elementText("DEPARTMENT"))
+                .put(fir_depart.getFir_depart().getField_id(), element.elementText("DEPARTMENT_DESCRIPT") == null ? element.elementText("BRANCH_DESCRIPTION") :
+                        element.elementText("DEPARTMENT_DESCRIPT"))
+                .put(fir_depart.getLeaders().getField_id(), element.elementText("")));
+        JSONObject reuslt = insertTable(paramJson, tableId);
+        return reuslt;
     }
 
     @Override
     public int updateTable(JSONObject jsonObject, Element element) {
-        return 0;
+        Fir_Depart fir_depart = (Fir_Depart) tableStuckCache.get("fir_depart");
+        String itemId = ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("item_id").toString();
+        JSONObject paramJson = JSONUtil.createObj().put("item_ids", itemId).put("filter", JSONUtil.createObj().put("and",
+                JSONUtil.createArray().put(JSONUtil.createObj().put("field", fir_depart.getDepart_code().getField_id())
+                        .put("query", JSONUtil.createObj().put("eq", element.elementText("DEPARTMENT"))))))
+                .put("data", JSONUtil.createObj().put(fir_depart.getFir_depart().getField_id(), element.elementText("DEPARTMENT_DESCRIPT")));
+        return updateTable(HbTablesId.depment, paramJson);
     }
 
     /**
      * @param jsonObject
      * @param fir_depart
      */
-
     void setFildsMap(JSONObject jsonObject, Fir_Depart fir_depart) {
         for (int i = 0; i < ((JSONArray) jsonObject.get("field_layout")).size(); i++) {
             for (Object objects : (JSONArray) jsonObject.get("fields")

@@ -116,13 +116,15 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
 
                     String companyItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.comany).
                             put("field_id", ((Company) tableStuckCache.get("company")).getCompany_code().getField_id()).
-                            put("field_value", itemEle.elementText("BRANCH")), new CompanyImpl(), itemEle);
+                            put("field_value", itemEle.elementText("BRANCH"))
+                            .put("fieldCnName",itemEle.elementTextTrim("BRANCH_DESCRIPTION")), new CompanyImpl(), itemEle);
                     team_name.getCompany_Name().setField_value(companyItemId);
 
                     team_name.getFir_Depart().setField_value(itemEle.elementText("DEPARTMENT"));
                     String firDepartMentItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.depment)
-                            .put("field_id", ((Fir_Depart) tableStuckCache.get("firDepartMent")).getFir_depart().getField_id())
-                            .put("field_value", itemEle.elementText("DEPARTMENT")), new FirDepartMentImpl(), itemEle);
+                            .put("field_id", ((Fir_Depart) tableStuckCache.get("fir_depart")).getDepart_code().getField_id())
+                            .put("field_value", "A9999".equals(itemEle.elementText("DEPARTMENT"))?itemEle.elementText("BRANCH")+"b1":
+                                    itemEle.elementText("DEPARTMENT")), new FirDepartMentImpl(), itemEle);
                     team_name.getFir_Depart().setField_value(firDepartMentItemId);
 
                     team_name.getSec_Depart().setField_value(itemEle.elementText("SECTION"));

@@ -7,7 +7,7 @@ import java.util.List;
 
 public class GroupImpl extends BaseHuoBanServ implements IHuoBanService {
     @Override
-    public void createFieldsIdMap(JSONObject jsonObject) {
+    public void createFieldsIdMap() {
 
     }
 

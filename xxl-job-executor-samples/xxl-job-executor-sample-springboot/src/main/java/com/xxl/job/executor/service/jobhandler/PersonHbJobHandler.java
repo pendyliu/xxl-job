@@ -10,8 +10,7 @@ import com.xxl.job.core.handler.IJobHandler;
 import com.xxl.job.core.handler.annotation.JobHandler;
 import com.xxl.job.core.log.XxlJobLogger;
 import com.xxl.job.core.util.DateUtil;
-import com.xxl.job.executor.Models.HbTablesId;
-import com.xxl.job.executor.Models.Team_Name;
+import com.xxl.job.executor.Models.*;
 import com.xxl.job.executor.core.config.HuoBanConfig;
 import com.xxl.job.executor.serviceHuoban.*;
 import org.springframework.stereotype.Component;
@@ -28,8 +27,8 @@ public class PersonHbJobHandler extends IJobHandler {
     @Override
     public ReturnT<String> execute(String param) throws Exception {
         XxlJobLogger.log("GetHuoban");
-        HuobanServ huobanServ=new HuobanServ();
-        iHuoBanService =new TeamNameImpl();
+        HuobanServ huobanServ = new HuobanServ();
+        iHuoBanService = new TeamNameImpl();
         //获取所有模型字段ID对照表存储到缓存中
         setAllFieldsMap(huobanServ);
         Object startDate = ((JSONObject) JSONUtil.parseObj(param).get("v_dates")).get("startDate");
@@ -40,12 +39,6 @@ public class PersonHbJobHandler extends IJobHandler {
         //读取组织结构
         List<Team_Name> team_names = iHuoBanService.readStringXml(xml);
 
-
-        JSONObject paramJson = JSONObject.class.newInstance();
-        paramJson.put("field_id", "title");
-        paramJson.put("query",JSONObject.class.newInstance().put("eq",""));
-        iHuoBanService.getItemId(JSONObject.class.newInstance().put("tableId", HbTablesId.comany));
-
         SUCCESS.setMsg("获取Tick成功:" + HuoBanConfig.getTicketJson().getStr("ticket") + "有效期截止于："
                 + HuoBanConfig.getTicketJson().getStr("expire_at"));
         return SUCCESS;
@@ -53,6 +46,7 @@ public class PersonHbJobHandler extends IJobHandler {
 
     /**
      * 获取所有模型字段ID对照表存储到缓存中
+     *
      * @param huobanServ
      */
     private void setAllFieldsMap(HuobanServ huobanServ) {
@@ -60,6 +54,11 @@ public class PersonHbJobHandler extends IJobHandler {
         huobanServ.setFieldsMap(TeamNameImpl.class);
         //从伙伴接口获取公司表结构字段ID
         huobanServ.setFieldsMap(CompanyImpl.class);
+        //从伙伴接口获取一级部门表结构字段ID
+        huobanServ.setFieldsMap(FirDepartMentImpl.class);
+        huobanServ.setFieldsMap(Sec_DepartImpl.class);
+        huobanServ.setFieldsMap(GroupImpl.class);
+        huobanServ.setFieldsMap(KeClassImpl.class);
     }
 
 }
