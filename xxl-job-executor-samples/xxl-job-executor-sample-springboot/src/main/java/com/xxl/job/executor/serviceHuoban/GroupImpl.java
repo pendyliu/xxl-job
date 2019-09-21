@@ -27,7 +27,7 @@ public class GroupImpl extends BaseHuoBanServ implements IHuoBanService {
     }
 
     @Override
-    public int updateTable(JSONObject jsonObject, Element element) {
-        return 0;
+    public JSONObject updateTable(JSONObject jsonObject, Element element) {
+        return null;
     }
 }

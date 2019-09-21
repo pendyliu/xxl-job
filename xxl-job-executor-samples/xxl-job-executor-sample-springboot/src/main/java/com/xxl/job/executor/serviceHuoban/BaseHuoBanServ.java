@@ -27,7 +27,7 @@ public abstract class BaseHuoBanServ {
     public String getItemsId(JSONObject paramJson, IHuoBanService iHuoBanService, Element element) {
         String tableId = paramJson.getStr("tableId");
         String field_code = paramJson.getStr("field_value");
-        String fieldCnName=paramJson.getStr("fieldCnName");
+        String fieldCnName = paramJson.getStr("fieldCnName");
         try {
             JSONArray andWhere = JSONArray.class.newInstance().put(JSONUtil.createObj().put("field", paramJson.get("field_id"))
                     .put("query", JSONUtil.createObj().put("eq", paramJson.get("field_value"))));
@@ -49,16 +49,16 @@ public abstract class BaseHuoBanServ {
                 .execute().body()));
         //定义一个存放itemId和中文名的Map对象
         Map<String, String> itemMap = new HashMap<>();
-         String itemId = ((JSONArray) result.get("items")).size() > 0 ?
+        String itemId = ((JSONArray) result.get("items")).size() > 0 ?
                 ((JSONObject) ((JSONArray) result.get("items")).get(0)).get("item_id").toString() : "";
         String cnName = "";
         if (itemId.length() > 0) {
-            cnName = StrUtil.split(((JSONObject) ((JSONArray) result.get("items")).get(0)).get("title").toString(), "")[0];
-            if (!cnName.equals(fieldCnName)) {
-                //如果中文名称不一样的话就去更新伙伴系统数据
-                if (iHuoBanService.updateTable(result, element) == 200) {
-                    XxlJobLogger.log(element.elementText("BRANCH") + "组织名称更新为：" + element.elementText("BRANCH_DESCRIPTION"));
-                }
+            JSONObject updateResult=iHuoBanService.updateTable(result.put("fieldCnName", fieldCnName).put("field_code", field_code), element);
+//            cnName = StrUtil.split(((JSONObject) ((JSONArray) result.get("items")).get(0)).get("title").toString(), "")[0];
+            cnName=updateResult.getStr("fieldCnName");
+            //如果中文名称不一样的话就去更新伙伴系统数据
+            if (updateResult.get("rspStatus")!=null &&((Integer) updateResult.get("rspStatus")) == 200) {
+                XxlJobLogger.log(element.elementText("BRANCH") + "组织名称更新为：" + element.elementText("BRANCH_DESCRIPTION"));
             }
         } else {
             result = iHuoBanService.insertTable(element);
@@ -87,6 +87,7 @@ public abstract class BaseHuoBanServ {
         }
         Object itemId = ((Map<String, Object>) tableStuckCache.get("itemsId")).get(paramJson.get("field_value"));
         Map<String, Object> itemFieldAndCnName = (Map<String, Object>) itemId;
+        //当伙伴接口获取组织的中文名称与本地缓存的中文名称不一致时重新去接口中伙伴接口中获取
         return (itemFieldAndCnName == null || !itemFieldAndCnName.get("fieldCnName").equals(paramJson.get("fieldCnName"))) ?
                 getItemsId(paramJson, iHuoBanService, element) : itemFieldAndCnName.get("itemId").toString();
     }

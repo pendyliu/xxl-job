@@ -43,6 +43,6 @@ public interface IHuoBanService<T> {
      * @param jsonObject
      * @return
      */
-    int updateTable(JSONObject jsonObject,Element element);
+    JSONObject updateTable(JSONObject jsonObject,Element element);
 
 }

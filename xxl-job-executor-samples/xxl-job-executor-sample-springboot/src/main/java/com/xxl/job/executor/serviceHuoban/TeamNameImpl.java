@@ -114,21 +114,34 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
                     // 拿到STAFF下的子节点ROW下的字节点组织节点的值
                     team_name.getCompany_Name().setField_value(itemEle.elementText("BRANCH"));
 
-                    String companyItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.comany).
-                            put("field_id", ((Company) tableStuckCache.get("company")).getCompany_code().getField_id()).
-                            put("field_value", itemEle.elementText("BRANCH"))
-                            .put("fieldCnName",itemEle.elementTextTrim("BRANCH_DESCRIPTION")), new CompanyImpl(), itemEle);
-                    team_name.getCompany_Name().setField_value(companyItemId);
+//                    String companyItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.comany).
+//                            put("field_id", ((Company) tableStuckCache.get("company")).getCompany_code().getField_id()).
+//                            put("field_value", itemEle.elementText("BRANCH"))
+//                            .put("fieldCnName",itemEle.elementTextTrim("BRANCH_DESCRIPTION")), new CompanyImpl(), itemEle);
+//                    team_name.getCompany_Name().setField_value(companyItemId);
+//
+//                    team_name.getFir_Depart().setField_value(itemEle.elementText("DEPARTMENT"));
+//                    String firDepartMentItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.depment)
+//                            .put("field_id", ((Fir_Depart) tableStuckCache.get("fir_depart")).getDepart_code().getField_id())
+//                            .put("field_value", "A9999".equals(itemEle.elementText("DEPARTMENT"))?itemEle.elementText("BRANCH")+"b1":
+//                                    itemEle.elementText("DEPARTMENT")), new FirDepartMentImpl(), itemEle);
+//                    team_name.getFir_Depart().setField_value(firDepartMentItemId);
+//
+//                    team_name.getSec_Depart().setField_value(itemEle.elementText("SECTION"));
+//                    String sectionItemId= getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.sec_depart)
+//                            .put("field_id", ((Sec_Depart) tableStuckCache.get("sec_depart")).getDepart_code().getField_id())
+//                            .put("field_value", "A9999".equals(itemEle.elementText("SECTION"))?itemEle.elementText("BRANCH")+"b2":
+//                                    itemEle.elementText("SECTION")), new Sec_DepartImpl(), itemEle);
+//                    team_name.getSec_Depart().setField_value(sectionItemId);
 
-                    team_name.getFir_Depart().setField_value(itemEle.elementText("DEPARTMENT"));
-                    String firDepartMentItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.depment)
-                            .put("field_id", ((Fir_Depart) tableStuckCache.get("fir_depart")).getDepart_code().getField_id())
-                            .put("field_value", "A9999".equals(itemEle.elementText("DEPARTMENT"))?itemEle.elementText("BRANCH")+"b1":
-                                    itemEle.elementText("DEPARTMENT")), new FirDepartMentImpl(), itemEle);
-                    team_name.getFir_Depart().setField_value(firDepartMentItemId);
-
-                    team_name.getSec_Depart().setField_value(itemEle.elementText("SECTION"));
                     team_name.getT_Class().setField_value(itemEle.elementText("SUB_SECTION"));
+                    String sub_section= getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.sub_secdepart)
+                            .put("field_id", ((KeClass) tableStuckCache.get("keClass")).getClass_code().getField_id())
+                            .put("field_value", "A9999".equals(itemEle.elementText("SUB_SECTION"))?itemEle.elementText("BRANCH")+"b3":
+                                    itemEle.elementText("SUB_SECTION")), new KeClassImpl(), itemEle);
+                    team_name.getSec_Depart().setField_value(sub_section);
+
+
                     team_name.getGroup().setField_value(itemEle.elementText("CITY"));
                     team_name.getTeam_Code().setField_value(itemEle.elementText("RANK"));
                     team_names.add(team_name);
@@ -177,8 +190,8 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
     }
 
     @Override
-    public int updateTable(JSONObject jsonObject, Element element) {
-        return 0;
+    public JSONObject updateTable(JSONObject jsonObject, Element element) {
+        return null;
     }
 
 

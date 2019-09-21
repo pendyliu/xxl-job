@@ -3,7 +3,6 @@ package com.xxl.job.executor.serviceHuoban;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.xxl.job.executor.Models.Company;
 import com.xxl.job.executor.Models.Fir_Depart;
 import com.xxl.job.executor.Models.HbTablesId;
 import com.xxl.job.executor.Models.KeyValueModel;
@@ -15,6 +14,7 @@ import java.util.Map;
 import static com.xxl.job.executor.service.jobhandler.PersonHbJobHandler.tableStuckCache;
 
 public class FirDepartMentImpl extends BaseHuoBanServ implements IHuoBanService {
+
     Fir_Depart fir_depart = new Fir_Depart();
 
     @Override
@@ -39,7 +39,7 @@ public class FirDepartMentImpl extends BaseHuoBanServ implements IHuoBanService 
     @Override
     public JSONObject insertTable(Element element) {
         String tableId = HbTablesId.depment;
-        Fir_Depart fir_depart = (Fir_Depart) tableStuckCache.get("fir_depart");
+        fir_depart = (Fir_Depart) tableStuckCache.get("fir_depart");
         JSONObject paramJson = JSONUtil.createObj().put("fields", JSONUtil.createObj().
                 put(fir_depart.getCompany_name().getField_id(),
                         JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get("itemsId"))).get(element.elementText("BRANCH"))).get("itemId")))
@@ -53,14 +53,24 @@ public class FirDepartMentImpl extends BaseHuoBanServ implements IHuoBanService 
     }
 
     @Override
-    public int updateTable(JSONObject jsonObject, Element element) {
-        Fir_Depart fir_depart = (Fir_Depart) tableStuckCache.get("fir_depart");
-        String itemId = ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("item_id").toString();
-        JSONObject paramJson = JSONUtil.createObj().put("item_ids", itemId).put("filter", JSONUtil.createObj().put("and",
-                JSONUtil.createArray().put(JSONUtil.createObj().put("field", fir_depart.getDepart_code().getField_id())
-                        .put("query", JSONUtil.createObj().put("eq", element.elementText("DEPARTMENT"))))))
-                .put("data", JSONUtil.createObj().put(fir_depart.getFir_depart().getField_id(), element.elementText("DEPARTMENT_DESCRIPT")));
-        return updateTable(HbTablesId.depment, paramJson);
+    public JSONObject updateTable(JSONObject jsonObject, Element element) {
+        JSONObject resultJson = JSONUtil.createObj();
+        fir_depart = (Fir_Depart) tableStuckCache.get("fir_depart");
+        List<JSONObject> jsonArray = (List<JSONObject>) ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("fields");
+        String cnName = ((JSONObject) ((JSONArray) jsonArray.stream().filter(p -> p.getStr("field_id").
+                equals(fir_depart.getFir_depart().getField_id())).findFirst().get().get("values")).get(0)).get("value").toString();
+        String fieldCnName = element.elementText("DEPARTMENT_DESCRIPT") == null ? element.elementText("BRANCH_DESCRIPTION") :
+                element.elementText("DEPARTMENT_DESCRIPT");
+        resultJson.put("fieldCnName", fieldCnName);
+        if (!cnName.equals(fieldCnName)) {
+            String itemId = ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("item_id").toString();
+            JSONObject paramJson = JSONUtil.createObj().put("item_ids", itemId).put("filter", JSONUtil.createObj().put("and",
+                    JSONUtil.createArray().put(JSONUtil.createObj().put("field", fir_depart.getDepart_code().getField_id())
+                            .put("query", JSONUtil.createObj().put("eq", jsonObject.getStr("field_code"))))))
+                    .put("data", JSONUtil.createObj().put(fir_depart.getFir_depart().getField_id(), fieldCnName));
+            resultJson.put("rspStatus", updateTable(HbTablesId.depment, paramJson));
+        }
+        return resultJson;
     }
 
     /**

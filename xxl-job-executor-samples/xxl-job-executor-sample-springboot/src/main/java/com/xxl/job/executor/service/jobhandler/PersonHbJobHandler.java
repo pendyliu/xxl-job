@@ -56,6 +56,7 @@ public class PersonHbJobHandler extends IJobHandler {
         huobanServ.setFieldsMap(CompanyImpl.class);
         //从伙伴接口获取一级部门表结构字段ID
         huobanServ.setFieldsMap(FirDepartMentImpl.class);
+        //从伙伴接口获取二级部门表结构字段ID
         huobanServ.setFieldsMap(Sec_DepartImpl.class);
         huobanServ.setFieldsMap(GroupImpl.class);
         huobanServ.setFieldsMap(KeClassImpl.class);

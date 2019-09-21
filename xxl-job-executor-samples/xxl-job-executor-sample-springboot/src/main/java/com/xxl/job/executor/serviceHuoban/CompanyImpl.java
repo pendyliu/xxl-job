@@ -1,5 +1,6 @@
 package com.xxl.job.executor.serviceHuoban;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -56,14 +57,21 @@ public class CompanyImpl extends BaseHuoBanServ implements IHuoBanService<Compan
     }
 
     @Override
-    public int updateTable(JSONObject jsonObject, Element element) {
-        Company company = (Company) tableStuckCache.get("company");
-        String itemId = ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("item_id").toString();
-        JSONObject paramJson = JSONUtil.createObj().put("item_ids", itemId).put("filter", JSONUtil.createObj().put("and",
-                JSONUtil.createArray().put(JSONUtil.createObj().put("field", company.getCompany_code().getField_id())
-                        .put("query", JSONUtil.createObj().put("eq", element.elementText("BRANCH"))))))
-                .put("data", JSONUtil.createObj().put(company.getCompany_name().getField_id(), element.elementText("BRANCH_DESCRIPTION")));
-        return updateTable(HbTablesId.comany, paramJson);
+    public JSONObject updateTable(JSONObject jsonObject, Element element) {
+        JSONObject resultJson = JSONUtil.createObj();
+        String cnName = StrUtil.split(((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("title").toString(), "")[0];
+        String fieldCnName = jsonObject.getStr("fieldCnName") == null ? element.elementText("BRANCH_DESCRIPTION") : jsonObject.getStr("fieldCnName");
+        resultJson.put("fieldCnName", fieldCnName);
+        if (!cnName.equals(fieldCnName)) {
+            Company company = (Company) tableStuckCache.get("company");
+            String itemId = ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("item_id").toString();
+            JSONObject paramJson = JSONUtil.createObj().put("item_ids", itemId).put("filter", JSONUtil.createObj().put("and",
+                    JSONUtil.createArray().put(JSONUtil.createObj().put("field", company.getCompany_code().getField_id())
+                            .put("query", JSONUtil.createObj().put("eq", element.elementText("BRANCH"))))))
+                    .put("data", JSONUtil.createObj().put(company.getCompany_name().getField_id(), element.elementText("BRANCH_DESCRIPTION")));
+            resultJson.put("rspStatus", updateTable(HbTablesId.comany, paramJson));
+        }
+        return resultJson;
     }
 
     /**
