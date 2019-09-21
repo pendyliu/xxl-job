@@ -23,7 +23,7 @@ public interface IHuoBanService<T> {
      * 填充本地缓存中的数据表
      * @param paramJson
      */
-    String getItemId(JSONObject paramJson);
+    String getItemId(JSONObject paramJson,Element element);
 
     /**
      * 从万古接口中读取数据

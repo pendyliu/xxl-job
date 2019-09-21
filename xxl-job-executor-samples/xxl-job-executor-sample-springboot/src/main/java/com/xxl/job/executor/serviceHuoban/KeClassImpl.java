@@ -3,10 +3,10 @@ package com.xxl.job.executor.serviceHuoban;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.xxl.job.core.log.XxlJobLogger;
 import com.xxl.job.executor.Models.HbTablesId;
 import com.xxl.job.executor.Models.KeClass;
 import com.xxl.job.executor.Models.KeyValueModel;
-import com.xxl.job.executor.Models.Sec_Depart;
 import org.dom4j.Element;
 
 import java.util.List;
@@ -27,8 +27,15 @@ public class KeClassImpl extends BaseHuoBanServ implements IHuoBanService {
     }
 
     @Override
-    public String getItemId(JSONObject paramJson) {
-        return null;
+    public String getItemId(JSONObject paramJson, Element element) {
+        try {
+            JSONArray andWhere = JSONArray.class.newInstance().put(JSONUtil.createObj().put("field", paramJson.get("field_id"))
+                    .put("query", JSONUtil.createObj().put("eq", paramJson.get("field_value"))));
+            paramJson.put("where", JSONUtil.createObj().put("and", andWhere)).remove("field_id");
+        } catch (Exception e) {
+            XxlJobLogger.log(e.getMessage());
+        }
+        return getItemsId(paramJson, this, element);
     }
 
     @Override
@@ -41,7 +48,7 @@ public class KeClassImpl extends BaseHuoBanServ implements IHuoBanService {
         String tableId = HbTablesId.sec_depart;
         String fir_depar_code = "A9999".equals(element.elementText("DEPARTMENT")) ? element.elementText("BRANCH") + "b1"
                 : element.elementText("DEPARTMENT");
-        String sec_depart_code= "A9999".equals(element.elementText("SECTION")) ? element.elementText("BRANCH") + "b2"
+        String sec_depart_code = "A9999".equals(element.elementText("SECTION")) ? element.elementText("BRANCH") + "b2"
                 : element.elementText("SECTION");
         keClass = (KeClass) tableStuckCache.get("keClass");
         JSONObject paramJson = JSONUtil.createObj().put("fields", JSONUtil.createObj().
@@ -65,8 +72,8 @@ public class KeClassImpl extends BaseHuoBanServ implements IHuoBanService {
         List<JSONObject> jsonArray = (List<JSONObject>) ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("fields");
         String cnName = ((JSONObject) ((JSONArray) jsonArray.stream().filter(p -> p.getStr("field_id").
                 equals(keClass.getClass_name().getField_id())).findFirst().get().get("values")).get(0)).get("value").toString();
-        String fieldCnName = element.elementText("SUB_DESCRIPTION") == null ? element.elementText("BRANCH_DESCRIPTION") :
-                element.elementText("SUB_DESCRIPTION");
+        String fieldCnName = element.elementText("SUB_DESCRIPTION") == null || "/".equals(element.elementText("SUB_DESCRIPTION")) ?
+                element.elementText("BRANCH_DESCRIPTION") : element.elementText("SUB_DESCRIPTION");
         resultJson.put("fieldCnName", fieldCnName);
         if (!cnName.equals(fieldCnName)) {
             String itemId = ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("item_id").toString();

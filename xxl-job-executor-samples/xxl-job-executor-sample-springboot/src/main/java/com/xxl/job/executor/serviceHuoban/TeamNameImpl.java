@@ -1,15 +1,10 @@
 package com.xxl.job.executor.serviceHuoban;
 
-import cn.hutool.core.text.UnicodeUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.http.Header;
-import cn.hutool.http.HttpRequest;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.xxl.job.core.log.XxlJobLogger;
 import com.xxl.job.executor.Models.*;
-import com.xxl.job.executor.core.config.HuoBanConfig;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
@@ -40,34 +35,15 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
     }
 
     @Override
-    public String getItemId(JSONObject paramJson) {
-        String tableId = paramJson.getStr("tableId");
+    public String getItemId(JSONObject paramJson, Element element) {
         try {
             JSONArray andWhere = JSONArray.class.newInstance().put(JSONUtil.createObj().put("field", paramJson.get("field_id"))
                     .put("query", JSONUtil.createObj().put("eq", paramJson.get("field_value"))));
-            paramJson.put("where", JSONUtil.createObj().put("and", andWhere)).remove("field");
-            if (tableStuckCache.get("itemsId") == null) {
-                List<KeyValueModel> itemIds = new ArrayList<>();
-                tableStuckCache.put("itemsId", itemIds);
-            }
-            JSONObject itemsId = JSONUtil.parseObj(tableStuckCache.get("itemsId"));
-            if (itemsId == null) {
-
-            }
-            paramJson.remove("query");
-            paramJson.remove("tableId");
-            paramJson.remove("field_value");
+            paramJson.put("where", JSONUtil.createObj().put("and", andWhere)).remove("field_id");
         } catch (Exception e) {
             XxlJobLogger.log(e.getMessage());
         }
-        JSONObject result = JSONUtil.parseObj(UnicodeUtil.toString(HttpRequest.post(StrUtil.format(
-                HuoBanConfig.props.getProperty("HuoBanBaseURL") + "v2/item/table/{}/find", tableId))
-                .header(Header.CONTENT_TYPE, "application/json")
-                .header("X-Huoban-Ticket", HuoBanConfig.getTicketJson().get("ticket").toString())
-                .body(paramJson.toString())
-                .execute().body()));
-
-        return ((JSONObject) ((JSONArray) result.get("items")).get(0)).get("item_id").toString();
+        return getItemsId(paramJson, this, element);
     }
 
     @Override
@@ -114,30 +90,28 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
                     // 拿到STAFF下的子节点ROW下的字节点组织节点的值
                     team_name.getCompany_Name().setField_value(itemEle.elementText("BRANCH"));
 
-//                    String companyItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.comany).
-//                            put("field_id", ((Company) tableStuckCache.get("company")).getCompany_code().getField_id()).
-//                            put("field_value", itemEle.elementText("BRANCH"))
-//                            .put("fieldCnName",itemEle.elementTextTrim("BRANCH_DESCRIPTION")), new CompanyImpl(), itemEle);
-//                    team_name.getCompany_Name().setField_value(companyItemId);
-//
-//                    team_name.getFir_Depart().setField_value(itemEle.elementText("DEPARTMENT"));
-//                    String firDepartMentItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.depment)
-//                            .put("field_id", ((Fir_Depart) tableStuckCache.get("fir_depart")).getDepart_code().getField_id())
-//                            .put("field_value", "A9999".equals(itemEle.elementText("DEPARTMENT"))?itemEle.elementText("BRANCH")+"b1":
-//                                    itemEle.elementText("DEPARTMENT")), new FirDepartMentImpl(), itemEle);
-//                    team_name.getFir_Depart().setField_value(firDepartMentItemId);
-//
-//                    team_name.getSec_Depart().setField_value(itemEle.elementText("SECTION"));
-//                    String sectionItemId= getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.sec_depart)
-//                            .put("field_id", ((Sec_Depart) tableStuckCache.get("sec_depart")).getDepart_code().getField_id())
-//                            .put("field_value", "A9999".equals(itemEle.elementText("SECTION"))?itemEle.elementText("BRANCH")+"b2":
-//                                    itemEle.elementText("SECTION")), new Sec_DepartImpl(), itemEle);
-//                    team_name.getSec_Depart().setField_value(sectionItemId);
+                    String companyItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.comany).
+                            put("field_id", ((Company) tableStuckCache.get("company")).getCompany_code().getField_id()).
+                            put("field_value", itemEle.elementText("BRANCH"))
+                            .put("fieldCnName",itemEle.elementTextTrim("BRANCH_DESCRIPTION")), new CompanyImpl(), itemEle);
+                    team_name.getCompany_Name().setField_value(companyItemId);
+
+                    team_name.getFir_Depart().setField_value(itemEle.elementText("DEPARTMENT"));
+                    String firDepartMentItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.depment)
+                            .put("field_id", ((Fir_Depart) tableStuckCache.get("fir_depart")).getDepart_code().getField_id())
+                            .put("field_value", getOrgNodeName(itemEle,"DEPARTMENT")), new FirDepartMentImpl(), itemEle);
+                    team_name.getFir_Depart().setField_value(firDepartMentItemId);
+
+                    team_name.getSec_Depart().setField_value(itemEle.elementText("SECTION"));
+                    String sectionItemId= getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.sec_depart)
+                            .put("field_id", ((Sec_Depart) tableStuckCache.get("sec_depart")).getDepart_code().getField_id())
+                            .put("field_value",getOrgNodeName(itemEle,"SECTION")), new Sec_DepartImpl(), itemEle);
+                    team_name.getSec_Depart().setField_value(sectionItemId);
 
                     team_name.getT_Class().setField_value(itemEle.elementText("SUB_SECTION"));
-                    String sub_section= getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.sub_secdepart)
+                    String sub_section = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.sub_secdepart)
                             .put("field_id", ((KeClass) tableStuckCache.get("keClass")).getClass_code().getField_id())
-                            .put("field_value", "A9999".equals(itemEle.elementText("SUB_SECTION"))?itemEle.elementText("BRANCH")+"b3":
+                            .put("field_value", "A9999".equals(itemEle.elementText("SUB_SECTION")) ? itemEle.elementText("BRANCH") + "b3" :
                                     itemEle.elementText("SUB_SECTION")), new KeClassImpl(), itemEle);
                     team_name.getSec_Depart().setField_value(sub_section);
 

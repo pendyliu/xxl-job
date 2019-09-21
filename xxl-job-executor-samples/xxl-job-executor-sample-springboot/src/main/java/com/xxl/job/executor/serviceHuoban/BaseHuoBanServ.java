@@ -28,18 +28,11 @@ public abstract class BaseHuoBanServ {
         String tableId = paramJson.getStr("tableId");
         String field_code = paramJson.getStr("field_value");
         String fieldCnName = paramJson.getStr("fieldCnName");
-        try {
-            JSONArray andWhere = JSONArray.class.newInstance().put(JSONUtil.createObj().put("field", paramJson.get("field_id"))
-                    .put("query", JSONUtil.createObj().put("eq", paramJson.get("field_value"))));
-            paramJson.put("where", JSONUtil.createObj().put("and", andWhere)).remove("field_id");
-            //移除掉接口不需要的参数
-            paramJson.remove("query");
-            paramJson.remove("tableId");
-            paramJson.remove("field_value");
-            paramJson.remove("fieldCnName");
-        } catch (Exception e) {
-            XxlJobLogger.log(e.getMessage());
-        }
+        //移除掉接口不需要的参数
+        paramJson.remove("query");
+        paramJson.remove("tableId");
+        paramJson.remove("field_value");
+        paramJson.remove("fieldCnName");
 
         JSONObject result = JSONUtil.parseObj(UnicodeUtil.toString(HttpRequest.post(StrUtil.format(
                 HuoBanConfig.props.getProperty("HuoBanBaseURL") + "v2/item/table/{}/find", tableId))
@@ -53,11 +46,10 @@ public abstract class BaseHuoBanServ {
                 ((JSONObject) ((JSONArray) result.get("items")).get(0)).get("item_id").toString() : "";
         String cnName = "";
         if (itemId.length() > 0) {
-            JSONObject updateResult=iHuoBanService.updateTable(result.put("fieldCnName", fieldCnName).put("field_code", field_code), element);
-//            cnName = StrUtil.split(((JSONObject) ((JSONArray) result.get("items")).get(0)).get("title").toString(), "")[0];
-            cnName=updateResult.getStr("fieldCnName");
+            JSONObject updateResult = iHuoBanService.updateTable(result.put("fieldCnName", fieldCnName).put("field_code", field_code), element);
+            cnName = updateResult.getStr("fieldCnName");
             //如果中文名称不一样的话就去更新伙伴系统数据
-            if (updateResult.get("rspStatus")!=null &&((Integer) updateResult.get("rspStatus")) == 200) {
+            if (updateResult.get("rspStatus") != null && ((Integer) updateResult.get("rspStatus")) == 200) {
                 XxlJobLogger.log(element.elementText("BRANCH") + "组织名称更新为：" + element.elementText("BRANCH_DESCRIPTION"));
             }
         } else {
@@ -89,7 +81,8 @@ public abstract class BaseHuoBanServ {
         Map<String, Object> itemFieldAndCnName = (Map<String, Object>) itemId;
         //当伙伴接口获取组织的中文名称与本地缓存的中文名称不一致时重新去接口中伙伴接口中获取
         return (itemFieldAndCnName == null || !itemFieldAndCnName.get("fieldCnName").equals(paramJson.get("fieldCnName"))) ?
-                getItemsId(paramJson, iHuoBanService, element) : itemFieldAndCnName.get("itemId").toString();
+//                getItemsId(paramJson, iHuoBanService, element) : itemFieldAndCnName.get("itemId").toString();
+                iHuoBanService.getItemId(paramJson, element) : itemFieldAndCnName.get("itemId").toString();
     }
 
     /**
@@ -138,6 +131,75 @@ public abstract class BaseHuoBanServ {
                 .header("X-Huoban-Ticket", HuoBanConfig.getTicketJson().getStr("ticket"))
                 .execute().body()));
         return result;
+    }
+
+    /**
+     * 获取各节点的值
+     *当前节点编码为A9999时取上一节点的编码加补码
+     * @param element
+     * @param orgNodeCode
+     * @return
+     */
+    public String getOrgNodeName(Element element, String orgNodeCode) {
+        String res = "";
+        switch (orgNodeCode) {
+            case "DEPARTMENT":
+                res = "A9999".equals(element.elementText("DEPARTMENT")) ? element.elementText("BRANCH") + "b1" : element.elementText("DEPARTMENT");
+                break;
+            case "DEPARTMENT_DESCRIPT":
+                res = "/".equals(element.elementText("DEPARTMENT_DESCRIPT")) ? element.elementText("BRANCH_DESCRIPTION") : element.elementText("DEPARTMENT_DESCRIPT");
+                break;
+            case "SECTION":
+                res = "A9999".equals(element.elementText("SECTION")) ? ("A9999".equals(element.elementText("DEPARTMENT")) ?
+                        element.elementText("BRANCH") : element.elementText("DEPARTMENT")) + "b2" : element.elementText("DEPARTMENT");
+                break;
+            case "SECTION_DESCRIPTION":
+                res = "/".equals(element.elementText("SECTION_DESCRIPTION")) ? "/".equals(element.elementText("DEPARTMENT_DESCRIPT")) ?
+                        element.elementText("BRANCH_DESCRIPTION") : element.elementText("DEPARTMENT_DESCRIPT") : element.elementText("DEPARTMENT_DESCRIPT");
+                break;
+            case "SUB_SECTION":
+                res = "A9999".equals(element.elementText("SUB_SECTION")) ? ("A9999".equals(element.elementText("SECTION")) ?
+                        "A9999".equals(element.elementText("DEPARTMENT")) ?
+                                element.elementText("BRANCH") : element.elementText("DEPARTMENT") :
+                        element.elementText("DEPARTMENT"))+"b3" : element.elementText("SUB_SECTION");
+                break;
+            case "SUB_DESCRIPTION":
+                res = "/".equals(element.elementText("SUB_DESCRIPTION")) ? "/".equals(element.elementText("SECTION_DESCRIPTION"))
+                        ? "/".equals(element.elementText("DEPARTMENT_DESCRIPT")) ?
+                        element.elementText("BRANCH_DESCRIPTION") : element.elementText("DEPARTMENT_DESCRIPT") :
+                        element.elementText("DEPARTMENT_DESCRIPT") : element.elementText("DEPARTMENT_DESCRIPT");
+                break;
+            case "CITY":
+                res = "A9999".equals(element.elementText("CITY")) ? ("A9999".equals(element.elementText("SUB_SECTION")) ? "A9999".equals(element.elementText("SECTION")) ?
+                        "A9999".equals(element.elementText("DEPARTMENT")) ? element.elementText("BRANCH") : element.elementText("DEPARTMENT") :
+                        element.elementText("DEPARTMENT") : element.elementText("SUB_SECTION"))+"b4" : element.elementText("CITY");
+                break;
+            case "CITY_DESCRIPTION":
+                res = "/".equals(element.elementText("CITY_DESCRIPTION")) ? "/".equals(element.elementText("SUB_DESCRIPTION")) ?
+                        "/".equals(element.elementText("SECTION_DESCRIPTION")) ? "/".equals(element.elementText("DEPARTMENT_DESCRIPT")) ?
+                                element.elementText("BRANCH_DESCRIPTION") : element.elementText("DEPARTMENT_DESCRIPT") :
+                                element.elementText("DEPARTMENT_DESCRIPT") : element.elementText("DEPARTMENT_DESCRIPT") : element.elementText("CITY_DESCRIPTION");
+                break;
+            case "RANK":
+                res = "A9999".equals(element.elementText("RANK")) ? ("A9999".equals(element.elementText("CITY")) ?
+                        "A9999".equals(element.elementText("SUB_SECTION")) ? "A9999".equals(element.elementText("SECTION")) ?
+                                "A9999".equals(element.elementText("DEPARTMENT")) ? element.elementText("BRANCH") : element.elementText("DEPARTMENT") :
+                                element.elementText("DEPARTMENT") : element.elementText("SUB_SECTION") : element.elementText("CITY"))+"b5" : element.elementText("RANK");
+                break;
+            case "RANK_DESCRIPTION":
+                res = "/".equals(element.elementText("RANK_DESCRIPTION")) ? "/".equals(element.elementText("CITY_DESCRIPTION")) ?
+                        "/".equals(element.elementText("SUB_DESCRIPTION")) ?
+                                "/".equals(element.elementText("SECTION_DESCRIPTION")) ?
+                                        "/".equals(element.elementText("DEPARTMENT_DESCRIPT")) ?
+                                                element.elementText("BRANCH_DESCRIPTION") : element.elementText("DEPARTMENT_DESCRIPT") :
+                                        element.elementText("DEPARTMENT_DESCRIPT") : element.elementText("DEPARTMENT_DESCRIPT") :
+                        element.elementText("CITY_DESCRIPTION") : element.elementText("RANK_DESCRIPTION");
+                break;
+            default:
+                res = "";
+                break;
+        }
+        return res;
     }
 
 }
