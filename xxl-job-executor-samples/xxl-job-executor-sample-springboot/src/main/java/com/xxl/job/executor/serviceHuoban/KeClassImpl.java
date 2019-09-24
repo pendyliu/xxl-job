@@ -9,6 +9,7 @@ import com.xxl.job.executor.Models.KeClass;
 import com.xxl.job.executor.Models.KeyValueModel;
 import org.dom4j.Element;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -16,6 +17,7 @@ import static com.xxl.job.executor.service.jobhandler.PersonHbJobHandler.tableSt
 
 public class KeClassImpl extends BaseHuoBanServ implements IHuoBanService {
     KeClass keClass = new KeClass();
+    public static String keClassItemsId = "keClassItemsId";
 
     @Override
     public void createFieldsIdMap() {
@@ -24,18 +26,37 @@ public class KeClassImpl extends BaseHuoBanServ implements IHuoBanService {
             setFildsMap(tableStrucResult, keClass);
             tableStuckCache.put("keClass", keClass);
         }
+        if (tableStuckCache.get(keClassItemsId)==null){
+            tableStuckCache.put(keClassItemsId,new HashMap<>());
+        }
     }
 
     @Override
-    public String getItemId(JSONObject paramJson, Element element) {
-        try {
-            JSONArray andWhere = JSONArray.class.newInstance().put(JSONUtil.createObj().put("field", paramJson.get("field_id"))
-                    .put("query", JSONUtil.createObj().put("eq", paramJson.get("field_value"))));
-            paramJson.put("where", JSONUtil.createObj().put("and", andWhere)).remove("field_id");
-        } catch (Exception e) {
-            XxlJobLogger.log(e.getMessage());
-        }
-        return getItemsId(paramJson, this, element);
+    public void saveItemsId(Map itemMap, String field_code) {
+
+    }
+
+    @Override
+    public Map<String, Object> getItemId(JSONObject paramJson, Element element) {
+        Object itemId = ((Map<String, Object>) tableStuckCache.get(keClassItemsId)).get(paramJson.get("field_value"));
+        Map<String, Object> itemFieldAndCnName = (Map<String, Object>) itemId;
+//        String result;
+//        keClass = (KeClass) tableStuckCache.get("keClass");
+//        if (itemFieldAndCnName == null || !itemFieldAndCnName.get("fieldCnName").equals(paramJson.get("fieldCnName"))) {
+//            try {
+//                JSONArray andWhere = JSONArray.class.newInstance().put(JSONUtil.createObj().put("field", paramJson.get("field_id"))
+//                        .put("query", JSONUtil.createObj().put("eq", paramJson.get("field_value"))))
+//                        .put(JSONUtil.createObj().put("field", keClass.getClass_name().getField_id())
+//                                .put("query", JSONUtil.createObj().put("eq", getOrgNodeName(element, "SUB_DESCRIPTION"))));
+//                paramJson.put("where", JSONUtil.createObj().put("and", andWhere)).remove("field_id");
+//            } catch (Exception e) {
+//                XxlJobLogger.log(e.getMessage());
+//            }
+//            result = getItemsId(paramJson, this, element);
+//        } else {
+//            result = itemFieldAndCnName.get(keClassItemsId).toString();
+//        }
+        return itemFieldAndCnName;
     }
 
     @Override
@@ -46,20 +67,16 @@ public class KeClassImpl extends BaseHuoBanServ implements IHuoBanService {
     @Override
     public JSONObject insertTable(Element element) {
         String tableId = HbTablesId.sec_depart;
-        String fir_depar_code = "A9999".equals(element.elementText("DEPARTMENT")) ? element.elementText("BRANCH") + "b1"
-                : element.elementText("DEPARTMENT");
-        String sec_depart_code = "A9999".equals(element.elementText("SECTION")) ? element.elementText("BRANCH") + "b2"
-                : element.elementText("SECTION");
+        String firDepartCode = getOrgNodeName(element, "DEPARTMENT");
+        String sec_depart_code = getOrgNodeName(element, "SECTION");
         keClass = (KeClass) tableStuckCache.get("keClass");
         JSONObject paramJson = JSONUtil.createObj().put("fields", JSONUtil.createObj().
                 put(keClass.getCompany_name().getField_id(),
-                        JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get("itemsId"))).get(element.elementText("BRANCH"))).get("itemId")))
-                .put(keClass.getFir_depart().getField_id(), JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get("itemsId"))).get(fir_depar_code)).get("itemId")))
-                .put(keClass.getSec_depart().getField_id(), JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get("itemsId"))).get(sec_depart_code)).get("itemId")))
-                .put(keClass.getClass_name().getField_id(), element.elementText("SUB_DESCRIPTION") == null ? element.elementText("BRANCH_DESCRIPTION") :
-                        element.elementText("SUB_DESCRIPTION"))
-                .put(keClass.getClass_code().getField_id(), "A9999".equals(element.elementText("SUB_SECTION")) ? element.elementText("BRANCH") + "b3"
-                        : element.elementText("SUB_SECTION"))
+                        JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(CompanyImpl.companyItemsId))).get(element.elementText("BRANCH"))).get("itemId")))
+                .put(keClass.getFir_depart().getField_id(), JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(FirDepartMentImpl.firDpartItemsId))).get(firDepartCode)).get("itemId")))
+                .put(keClass.getSec_depart().getField_id(), JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(Sec_DepartImpl.secDepartItemsId))).get(sec_depart_code)).get("itemId")))
+                .put(keClass.getClass_name().getField_id(),getOrgNodeName(element,"SUB_DESCRIPTION"))
+                .put(keClass.getClass_code().getField_id(), getOrgNodeName(element, "SUB_SECTION"))
                 .put(keClass.getLeaders().getField_id(), element.elementText("")));
         JSONObject reuslt = insertTable(paramJson, tableId);
         return reuslt;
@@ -72,8 +89,7 @@ public class KeClassImpl extends BaseHuoBanServ implements IHuoBanService {
         List<JSONObject> jsonArray = (List<JSONObject>) ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("fields");
         String cnName = ((JSONObject) ((JSONArray) jsonArray.stream().filter(p -> p.getStr("field_id").
                 equals(keClass.getClass_name().getField_id())).findFirst().get().get("values")).get(0)).get("value").toString();
-        String fieldCnName = element.elementText("SUB_DESCRIPTION") == null || "/".equals(element.elementText("SUB_DESCRIPTION")) ?
-                element.elementText("BRANCH_DESCRIPTION") : element.elementText("SUB_DESCRIPTION");
+        String fieldCnName = getOrgNodeName(element, "SUB_DESCRIPTION");
         resultJson.put("fieldCnName", fieldCnName);
         if (!cnName.equals(fieldCnName)) {
             String itemId = ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("item_id").toString();

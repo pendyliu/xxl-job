@@ -4,11 +4,13 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.xxl.job.core.log.XxlJobLogger;
+import com.xxl.job.executor.Models.Company;
 import com.xxl.job.executor.Models.Fir_Depart;
 import com.xxl.job.executor.Models.HbTablesId;
 import com.xxl.job.executor.Models.KeyValueModel;
 import org.dom4j.Element;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +19,7 @@ import static com.xxl.job.executor.service.jobhandler.PersonHbJobHandler.tableSt
 public class FirDepartMentImpl extends BaseHuoBanServ implements IHuoBanService {
 
     Fir_Depart fir_depart = new Fir_Depart();
+    public static String firDpartItemsId = "firDpartItemsId";
 
     @Override
     public void createFieldsIdMap() {
@@ -25,18 +28,31 @@ public class FirDepartMentImpl extends BaseHuoBanServ implements IHuoBanService 
             setFildsMap(jsonObject, fir_depart);
             tableStuckCache.put("fir_depart", fir_depart);
         }
+        if (tableStuckCache.get(firDpartItemsId)==null){
+            tableStuckCache.put(firDpartItemsId,new HashMap<>());
+        }
     }
 
     @Override
-    public String getItemId(JSONObject paramJson, Element element) {
-        try {
-            JSONArray andWhere = JSONArray.class.newInstance().put(JSONUtil.createObj().put("field", paramJson.get("field_id"))
-                    .put("query", JSONUtil.createObj().put("eq", paramJson.get("field_value"))));
-            paramJson.put("where", JSONUtil.createObj().put("and", andWhere)).remove("field_id");
-        } catch (Exception e) {
-            XxlJobLogger.log(e.getMessage());
-        }
-        return getItemsId(paramJson, this, element);
+    public Map<String, Object> getItemId(JSONObject paramJson, Element element) {
+        Object itemId = ((Map<String, Object>) tableStuckCache.get(firDpartItemsId)).get(paramJson.get("field_value"));
+        Map<String, Object> itemFieldAndCnName = (Map<String, Object>) itemId;
+//        String result;
+//        if (itemFieldAndCnName == null || !itemFieldAndCnName.get("fieldCnName").equals(paramJson.get("fieldCnName"))) {
+//            try {
+//                JSONArray andWhere = JSONArray.class.newInstance().put(JSONUtil.createObj().put("field", paramJson.get("field_id"))
+//                        .put("query", JSONUtil.createObj().put("eq", paramJson.get("field_value"))))
+//                        .put(JSONUtil.createObj().put("field", fir_depart.getFir_depart().getField_id())
+//                                .put("query", JSONUtil.createObj().put("eq", getOrgNodeName(element, "DEPARTMENT_DESCRIPT"))));
+//                paramJson.put("where", JSONUtil.createObj().put("and", andWhere)).remove("field_id");
+//            } catch (Exception e) {
+//                XxlJobLogger.log(e.getMessage());
+//            }
+//            result = getItemsId(paramJson, this, element);
+//        } else {
+//            result = itemFieldAndCnName.get("itemId").toString();
+//        }
+        return itemFieldAndCnName;
     }
 
     @Override
@@ -50,14 +66,18 @@ public class FirDepartMentImpl extends BaseHuoBanServ implements IHuoBanService 
         fir_depart = (Fir_Depart) tableStuckCache.get("fir_depart");
         JSONObject paramJson = JSONUtil.createObj().put("fields", JSONUtil.createObj().
                 put(fir_depart.getCompany_name().getField_id(),
-                        JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get("itemsId"))).get(element.elementText("BRANCH"))).get("itemId")))
-                .put(fir_depart.getDepart_code().getField_id(), "A9999".equals(element.elementText("DEPARTMENT")) ?
-                        element.elementText("BRANCH") + "b1" : element.elementText("DEPARTMENT"))
-                .put(fir_depart.getFir_depart().getField_id(), element.elementText("DEPARTMENT_DESCRIPT") == null ? element.elementText("BRANCH_DESCRIPTION") :
-                        element.elementText("DEPARTMENT_DESCRIPT"))
+                        JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(CompanyImpl.companyItemsId))).get(element.elementText("BRANCH"))).get("itemId")))
+                .put(fir_depart.getDepart_code().getField_id(), getOrgNodeName(element, "DEPARTMENT"))
+                .put(fir_depart.getFir_depart().getField_id(), getOrgNodeName(element, "DEPARTMENT_DESCRIPT"))
                 .put(fir_depart.getLeaders().getField_id(), element.elementText("")));
         JSONObject reuslt = insertTable(paramJson, tableId);
         return reuslt;
+    }
+
+    @Override
+    public void saveItemsId(Map itemMap, String field_code) {
+        //将以组织编码为Key，Map对象为Value的键值存放到缓存中
+        ((Map) tableStuckCache.get(firDpartItemsId)).put(field_code, itemMap);
     }
 
     @Override
@@ -67,8 +87,7 @@ public class FirDepartMentImpl extends BaseHuoBanServ implements IHuoBanService 
         List<JSONObject> jsonArray = (List<JSONObject>) ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("fields");
         String cnName = ((JSONObject) ((JSONArray) jsonArray.stream().filter(p -> p.getStr("field_id").
                 equals(fir_depart.getFir_depart().getField_id())).findFirst().get().get("values")).get(0)).get("value").toString();
-        String fieldCnName = element.elementText("DEPARTMENT_DESCRIPT") == null ? element.elementText("BRANCH_DESCRIPTION") :
-                element.elementText("DEPARTMENT_DESCRIPT");
+        String fieldCnName = getOrgNodeName(element, "DEPARTMENT_DESCRIPT");
         resultJson.put("fieldCnName", fieldCnName);
         if (!cnName.equals(fieldCnName)) {
             String itemId = ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("item_id").toString();

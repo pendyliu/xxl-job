@@ -20,7 +20,7 @@ public class HbTablesId {
     /**
      * 班
      */
-    public static String city = "2100000010850382";
+    public static String group = "2100000010850382";
     /**
      * 班组
      */

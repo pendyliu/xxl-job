@@ -4,46 +4,60 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.xxl.job.core.log.XxlJobLogger;
 import com.xxl.job.executor.Models.Company;
 import com.xxl.job.executor.Models.HbTablesId;
 import com.xxl.job.executor.Models.KeyValueModel;
 import org.dom4j.Element;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.xxl.job.executor.service.jobhandler.PersonHbJobHandler.tableStuckCache;
-
 
 /**
  * 组织结构公司实现类
  */
 public class CompanyImpl extends BaseHuoBanServ implements IHuoBanService<Company> {
     static Company company = new Company();
+    public static String companyItemsId = "companyItemsId";
+    public static String tbCacheStruc = "company";
 
     @Override
     public void createFieldsIdMap() {
-        if (tableStuckCache.get("company") == null) {
+        if (tableStuckCache.get(tbCacheStruc) == null) {
             JSONObject jsonObject = getTables(HbTablesId.comany);
             setFildsMap(jsonObject, company);
             /**
              * 将表结构对象存放到缓存当中
              */
-            tableStuckCache.put("company", company);
+            tableStuckCache.put(tbCacheStruc, company);
+        }
+        if (tableStuckCache.get(companyItemsId) == null) {
+            tableStuckCache.put(companyItemsId, new HashMap<>());
         }
     }
 
     @Override
-    public String getItemId(JSONObject paramJson, Element element) {
-        try {
-            JSONArray andWhere = JSONArray.class.newInstance().put(JSONUtil.createObj().put("field", paramJson.get("field_id"))
-                    .put("query", JSONUtil.createObj().put("eq", paramJson.get("field_value"))));
-            paramJson.put("where", JSONUtil.createObj().put("and", andWhere)).remove("field_id");
-        } catch (Exception e) {
-            XxlJobLogger.log(e.getMessage());
-        }
-        return getItemsId(paramJson, this, element);
+    public Map<String, Object> getItemId(JSONObject paramJson, Element element) {
+        Object itemId = ((Map<String, Object>) tableStuckCache.get(companyItemsId)).get(paramJson.get("field_value"));
+        Map<String, Object> itemFieldAndCnName = (Map<String, Object>) itemId;
+//        String result;
+//        if (itemFieldAndCnName == null || !itemFieldAndCnName.get("fieldCnName").equals(paramJson.get("fieldCnName"))) {
+//            try {
+//                JSONArray andWhere = JSONArray.class.newInstance().put(JSONUtil.createObj().put("field", paramJson.get("field_id"))
+//                        .put("query", JSONUtil.createObj().put("eq", paramJson.get("field_value"))));
+//                paramJson.put("where", JSONUtil.createObj().put("and", andWhere)).remove("field_id");
+//            } catch (Exception e) {
+//                XxlJobLogger.log(e.getMessage());
+//            }
+//            //当伙伴接口获取组织的中文名称与本地缓存的中文名称不一致时重新去接口中伙伴接口中获取
+//            result = getItemsId(paramJson, this, element);
+//        } else {
+//            result = itemFieldAndCnName.get("itemId").toString();
+//        }
+        return itemFieldAndCnName;
     }
 
     @Override
@@ -55,13 +69,19 @@ public class CompanyImpl extends BaseHuoBanServ implements IHuoBanService<Compan
     @Override
     public JSONObject insertTable(Element element) {
         String tableId = HbTablesId.comany;
-        Company company = (Company) tableStuckCache.get("company");
+        Company company = (Company) tableStuckCache.get(tbCacheStruc);
         JSONObject paramJson = JSONUtil.createObj().put("fields", JSONUtil.createObj().
                 put(company.getCompany_code().getField_id(), element.elementText("BRANCH"))
                 .put(company.getCompany_name().getField_id(), element.elementText("BRANCH_DESCRIPTION"))
                 .put(company.getCompany_leaders().getField_id(), element.elementText("")));
         JSONObject reuslt = insertTable(paramJson, tableId);
         return reuslt;
+    }
+
+    @Override
+    public void saveItemsId(Map itemMap, String field_code) {
+        //将以组织编码为Key，Map对象为Value的键值存放到缓存中
+        ((Map) tableStuckCache.get(companyItemsId)).put(field_code, itemMap);
     }
 
     @Override

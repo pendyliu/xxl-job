@@ -4,6 +4,7 @@ import cn.hutool.json.JSONObject;
 import org.dom4j.Element;
 
 import java.util.List;
+import java.util.Map;
 
 /*** 
 * @Description: 通过表结构接口创建字段映射 
@@ -23,7 +24,7 @@ public interface IHuoBanService<T> {
      * 填充本地缓存中的数据表
      * @param paramJson
      */
-    String getItemId(JSONObject paramJson,Element element);
+    Map getItemId(JSONObject paramJson,Element element);
 
     /**
      * 从万古接口中读取数据
@@ -44,5 +45,12 @@ public interface IHuoBanService<T> {
      * @return
      */
     JSONObject updateTable(JSONObject jsonObject,Element element);
+
+    /**
+     * 因为每个组织节点在每个表中是不一样的，所以每个节点都来实现自己保存到本地缓存中
+     * @param itemMap
+     * @param field_code 组织节点的编码 对应他的 itemId 和 组织节点的中文名称
+     */
+    void saveItemsId(Map itemMap,String field_code);
 
 }
