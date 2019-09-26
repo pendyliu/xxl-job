@@ -35,7 +35,8 @@ public class FirDepartMentImpl extends BaseHuoBanServ implements IHuoBanService 
     public String getCacheItemId(Element element) {
         String firDepartMentItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.depment)
                 .put("field_id", ((Fir_Depart) tableStuckCache.get("fir_depart")).getDepart_code().getField_id())
-                .put("field_value", getOrgNodeName(element, "DEPARTMENT")), this, element);
+                .put("field_value", getOrgNodeName(element, "DEPARTMENT"))
+                .put("fieldCnName",getOrgNodeName(element,"DEPARTMENT_DESCRIPT")), this, element);
         return firDepartMentItemId;
     }
 

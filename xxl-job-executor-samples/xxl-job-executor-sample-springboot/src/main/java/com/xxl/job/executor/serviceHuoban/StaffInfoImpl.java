@@ -1,11 +1,15 @@
 package com.xxl.job.executor.serviceHuoban;
 
+import cn.hutool.core.convert.Convert;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.xxl.job.core.log.XxlJobLogger;
+import com.xxl.job.core.util.DateUtil;
 import com.xxl.job.executor.Models.HbTablesId;
 import com.xxl.job.executor.Models.KeyValueModel;
+import com.xxl.job.executor.Models.PostName;
 import com.xxl.job.executor.Models.Staff_Info;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
@@ -21,7 +25,7 @@ import static com.xxl.job.executor.service.jobhandler.PersonHbJobHandler.tableSt
 
 public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
     public static String staffInfoTbStruc = "staff_info";
-    public static String staffInfoItemsId="staffInfoItemsId";
+    public static String staffInfoItemsId = "staffInfoItemsId";
     Staff_Info staffInfo = new Staff_Info();
 
 
@@ -69,11 +73,11 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
                 Iterator iters = recordEle.elementIterator("ROW");
                 // 遍历ROW节点下的Response节点
                 while (iters.hasNext()) {
-                    Element itemEle = (Element) iters.next();
+                    Element element = (Element) iters.next();
                     // 拿到STAFF下的子节点ROW下的字节点组织节点的值
                     String staffInfoItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.staff_info)
                             .put("field_id", ((Staff_Info) tableStuckCache.get(staffInfoTbStruc)).getStaff_number().getField_id())
-                            .put("field_value", itemEle.elementText("STAFF_NO")), this, itemEle);
+                            .put("field_value", element.elementText("STAFF_NO")), this, element);
 
                 }
             }
@@ -90,36 +94,50 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
 
     @Override
     public JSONObject insertTable(Element element) {
-        String companyItemId=element.elementText("BRANCH");
-        String firDepartCode=getOrgNodeName(element,"DEPARTMENT");
-        String sec_depart_code=getOrgNodeName(element,"SECTION");
-        String subSectionCode=getOrgNodeName(element,"SUB_SECTION");
-        String groupCode=getOrgNodeName(element,"CITY");
-        String teamCode=getOrgNodeName(element,"RANK");
-        JSONObject staffInfoJson=JSONUtil.createObj().put("fields", JSONUtil.createObj().
-                put(staffInfo.getStaff_number().getField_id(),element.elementText("STAFF_NO"))
-                .put(staffInfo.getStaff_name().getField_id(),element.elementText("STAFF_NAME"))
-                .put(staffInfo.getStaff_birth().getField_id(),element.elementText("DATE_OF_BIRTH"))
-                .put(staffInfo.getStaff_gender().getField_id(),element.elementText("SEX"))
-                .put(staffInfo.getCompany().getField_id(), JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(CompanyImpl.companyItemsId))).get(companyItemId)).get("itemId")))
-                .put(staffInfo.getStaff_name().getField_id(), JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(FirDepartMentImpl.firDpartItemsId))).get(firDepartCode)).get("itemId")))
-                .put(staffInfo.getSec_depart().getField_id(), JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(Sec_DepartImpl.secDepartItemsId))).get(sec_depart_code)).get("itemId")))
-                .put(staffInfo.getKeClass().getField_id(),JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(KeClassImpl.keClassItemsId))).get(subSectionCode)).get("itemId")))
-                .put(staffInfo.getGroup().getField_id(),JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(GroupImpl.groupItemsId))).get(groupCode)).get("itemId")))
-                .put(staffInfo.getTeam().getField_id(),JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(TeamNameImpl.rankItemsId))).get(teamCode)).get("itemId")))
-                .put(staffInfo.getPost().getField_id(),element.elementText("POSITION"))
+        String companyItemId = new CompanyImpl().getCacheItemId(element);
+        String firDepartItemId = new FirDepartMentImpl().getCacheItemId(element);
+        String sec_depart_code = new Sec_DepartImpl().getCacheItemId(element);
+        String subSectionCode = new KeClassImpl().getCacheItemId(element);
+        String groupCode = new GroupImpl().getCacheItemId(element);
+        String teamCode = new TeamNameImpl().getCacheItemId(element);
+        String postItemId = new PostNameImpl().getCacheItemId(element);
+        JSONObject staffInfoJson = JSONUtil.createObj().put("fields", JSONUtil.createObj().
+                put(staffInfo.getStaff_number().getField_id(), element.elementText("STAFF_NO"))
+                .put(staffInfo.getStaff_name().getField_id(), element.elementText("STAFF_NAME"))
+                .put(staffInfo.getStaff_birth().getField_id(), element.elementText("DATE_OF_BIRTH"))
+                .put(staffInfo.getStaff_gender().getField_id(), element.elementText("SEX"))
+                .put(staffInfo.getCompany().getField_id(), JSONUtil.createArray().put(companyItemId))
+                .put(staffInfo.getFir_depart().getField_id(), JSONUtil.createArray().put(firDepartItemId))
+                .put(staffInfo.getSec_depart().getField_id(), JSONUtil.createArray().put(sec_depart_code))
+                .put(staffInfo.getKeClass().getField_id(), JSONUtil.createArray().put(subSectionCode))
+                .put(staffInfo.getGroup().getField_id(), JSONUtil.createArray().put(groupCode))
+                .put(staffInfo.getTeam().getField_id(), JSONUtil.createArray().put(teamCode))
+                .put(staffInfo.getPost().getField_id(), JSONUtil.createArray().put(postItemId))
                 .put(staffInfo.getStaff_status().getField_id(), element.elementText("STATUS"))
-                .put(staffInfo.getStaff_edu().getField_id(),element.elementText(""))
-                .put(staffInfo.getSepar_time().getField_id(),element.elementText("TERMINATION_DATE"))
-                .put(staffInfo.getSuperior().getField_id(),element.elementText("SUPERVISOR_NAME"))
+                .put(staffInfo.getStaff_edu().getField_id(), element.elementText(""))
+                .put(staffInfo.getSepar_time().getField_id(), element.elementText("TERMINATION_DATE") != null ? DateUtil.format(Convert.toDate(element.elementText("TERMINATION_DATE")), "yyyy-MM-dd") : "")
+                .put(staffInfo.getSuperior().getField_id(), element.elementText("SUPERVISOR_NAME") != null ? DateUtil.format(Convert.toDate(element.elementText("SUPERVISOR_NAME")), "yyyy-MM-dd") : "")
         );
-
-          return null;
+        JSONObject result = insertTable(staffInfoJson, HbTablesId.staff_info);
+        return result;
     }
 
     @Override
     public JSONObject updateTable(JSONObject jsonObject, Element element) {
-        return null;
+        JSONObject resultJson = JSONUtil.createObj();
+        String cnName = StrUtil.split(((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("title").toString(), "")[0];
+        String fieldCnName = jsonObject.getStr("fieldCnName") == null ? element.elementText("STAFF_NAME") : jsonObject.getStr("fieldCnName");
+        resultJson.put("fieldCnName", fieldCnName);
+        if (!cnName.equals(fieldCnName)) {
+            Staff_Info staffInfo = (Staff_Info) tableStuckCache.get(staffInfoTbStruc);
+            String itemId = ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("item_id").toString();
+            JSONObject paramJson = JSONUtil.createObj().put("item_ids", itemId).put("filter", JSONUtil.createObj().put("and",
+                    JSONUtil.createArray().put(JSONUtil.createObj().put("field", staffInfo.getStaff_number().getField_id())
+                            .put("query", JSONUtil.createObj().put("eq", element.elementText("STAFF_NO"))))))
+                    .put("data", JSONUtil.createObj().put(staffInfo.getStaff_name().getField_id(), element.elementText("STAFF_NAME")));
+            resultJson.put("rspStatus", updateTable(HbTablesId.comany, paramJson));
+        }
+        return resultJson;
     }
 
     @Override
@@ -129,6 +147,7 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
 
     /**
      * 创建人员信息表结构对照
+     *
      * @param jsonObject
      * @param staffInfo
      */

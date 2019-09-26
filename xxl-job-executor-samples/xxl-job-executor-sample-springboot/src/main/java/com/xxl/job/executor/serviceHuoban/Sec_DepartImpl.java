@@ -34,7 +34,8 @@ public class Sec_DepartImpl extends BaseHuoBanServ implements IHuoBanService {
     public String getCacheItemId(Element element) {
         String sectionItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.sec_depart)
                 .put("field_id", ((Sec_Depart) tableStuckCache.get("sec_depart")).getDepart_code().getField_id())
-                .put("field_value", getOrgNodeName(element, "SECTION")), this, element);
+                .put("field_value", getOrgNodeName(element, "SECTION"))
+                .put("fieldCnName", getOrgNodeName(element, "SECTION_DESCRIPTION")), this, element);
         return sectionItemId;
     }
 

@@ -4,7 +4,10 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.xxl.job.core.log.XxlJobLogger;
-import com.xxl.job.executor.Models.*;
+import com.xxl.job.executor.Models.Company;
+import com.xxl.job.executor.Models.HbTablesId;
+import com.xxl.job.executor.Models.KeyValueModel;
+import com.xxl.job.executor.Models.Team_Name;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
@@ -20,7 +23,7 @@ import static com.xxl.job.executor.service.jobhandler.PersonHbJobHandler.tableSt
 public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
     static Team_Name team_name = new Team_Name();
     public static String rankItemsId = "rankItemsId";
-    public static String rankStruc="team_name";
+    public static String rankStruc = "team_name";
 
     @Override
     public void createFieldsIdMap() {
@@ -62,7 +65,8 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
     public String getCacheItemId(Element element) {
         String teamItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.team_name)
                 .put("field_id", ((Team_Name) tableStuckCache.get("team_name")).getTeam_Code().getField_id())
-                .put("field_value", getOrgNodeName(element, "RANK")), this, element);
+                .put("field_value", getOrgNodeName(element, "RANK"))
+                .put("fieldCnName", getOrgNodeName(element, "RANK_DESCRIPTION")), this, element);
         return teamItemId;
     }
 
@@ -89,15 +93,13 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
 
                 while (iters.hasNext()) {
                     Element element = (Element) iters.next();
-
+                    String companyItemId = new CompanyImpl().getCacheItemId(element);
+                    String firDepartMentItemId = new FirDepartMentImpl().getCacheItemId(element);
+                    String sectionItemId = new Sec_DepartImpl().getCacheItemId(element);
+                    String sub_sectionItemId = new KeClassImpl().getCacheItemId(element);
+                    String cityItemId = new GroupImpl().getCacheItemId(element);
                     String teamItemId = new TeamNameImpl().getCacheItemId(element);
                     String postItemId = new PostNameImpl().getCacheItemId(element);
-                    String companyItemId = new CompanyImpl().getCacheItemId(element);
-                    String firDepartMentItemId =new FirDepartMentImpl().getCacheItemId(element);
-                    String sectionItemId= new Sec_DepartImpl().getCacheItemId(element);
-                    String sub_sectionItemId = new KeClassImpl().getCacheItemId(element);
-                    String cityItemId = new KeClassImpl().getCacheItemId(element);
-
                 }
             }
 

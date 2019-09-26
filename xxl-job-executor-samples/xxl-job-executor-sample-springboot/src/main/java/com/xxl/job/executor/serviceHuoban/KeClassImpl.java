@@ -32,14 +32,16 @@ public class KeClassImpl extends BaseHuoBanServ implements IHuoBanService {
 
     @Override
     public void saveItemsId(Map itemMap, String field_code) {
-
+        //将以组织编码为Key，Map对象为Value的键值存放到缓存中
+        ((Map) tableStuckCache.get(keClassItemsId)).put(field_code, itemMap);
     }
 
     @Override
     public String getCacheItemId(Element element) {
         String sub_sectionItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.sub_secdepart)
                 .put("field_id", ((KeClass) tableStuckCache.get("keClass")).getClass_code().getField_id())
-                .put("field_value", getOrgNodeName(element, "SUB_SECTION")), this, element);
+                .put("field_value", getOrgNodeName(element, "SUB_SECTION"))
+                .put("fieldCnName", getOrgNodeName(element, "SUB_DESCRIPTION")), this, element);
         return sub_sectionItemId;
     }
 

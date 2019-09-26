@@ -55,8 +55,9 @@ public class GroupImpl extends BaseHuoBanServ implements IHuoBanService {
     @Override
     public String getCacheItemId(Element element) {
         String cityItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.group)
-                .put("field_id", ((Group) tableStuckCache.get("keClass")).getGroup_code().getField_id())
-                .put("field_value", getOrgNodeName(element, "CITY")), this, element);
+                .put("field_id", ((Group) tableStuckCache.get(groupStruc)).getGroup_code().getField_id())
+                .put("field_value", getOrgNodeName(element, "CITY"))
+                .put("fieldCnName", getOrgNodeName(element, "CITY_DESCRIPTION")), this, element);
         return cityItemId;
     }
 
