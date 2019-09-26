@@ -5,7 +5,6 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.xxl.job.executor.Models.Group;
 import com.xxl.job.executor.Models.HbTablesId;
-import com.xxl.job.executor.Models.KeClass;
 import com.xxl.job.executor.Models.KeyValueModel;
 import org.dom4j.Element;
 
@@ -54,6 +53,14 @@ public class GroupImpl extends BaseHuoBanServ implements IHuoBanService {
     }
 
     @Override
+    public String getCacheItemId(Element element) {
+        String cityItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.group)
+                .put("field_id", ((Group) tableStuckCache.get("keClass")).getGroup_code().getField_id())
+                .put("field_value", getOrgNodeName(element, "CITY")), this, element);
+        return cityItemId;
+    }
+
+    @Override
     public List readStringXml(String xml) {
         return null;
     }
@@ -63,15 +70,15 @@ public class GroupImpl extends BaseHuoBanServ implements IHuoBanService {
         String tableId = HbTablesId.group;
         String firDepartCode = getOrgNodeName(element, "DEPARTMENT");
         String sec_depart_code = getOrgNodeName(element, "SECTION");
-        String subSectionCode=getOrgNodeName(element,"SUB_SECTION");
+        String subSectionCode = getOrgNodeName(element, "SUB_SECTION");
         group = (Group) tableStuckCache.get(groupStruc);
         JSONObject paramJson = JSONUtil.createObj().put("fields", JSONUtil.createObj().
                 put(group.getCompany_name().getField_id(),
                         JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(CompanyImpl.companyItemsId))).get(element.elementText("BRANCH"))).get("itemId")))
                 .put(group.getFir_depart().getField_id(), JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(FirDepartMentImpl.firDpartItemsId))).get(firDepartCode)).get("itemId")))
                 .put(group.getSec_depart().getField_id(), JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(Sec_DepartImpl.secDepartItemsId))).get(sec_depart_code)).get("itemId")))
-                .put(group.getKe_class().getField_id(),JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(KeClassImpl.keClassItemsId))).get(subSectionCode)).get("itemId")))
-                .put(group.getGroup_name().getField_id(),getOrgNodeName(element,"CITY_DESCRIPTION"))
+                .put(group.getKe_class().getField_id(), JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(KeClassImpl.keClassItemsId))).get(subSectionCode)).get("itemId")))
+                .put(group.getGroup_name().getField_id(), getOrgNodeName(element, "CITY_DESCRIPTION"))
                 .put(group.getGroup_code().getField_id(), getOrgNodeName(element, "CITY"))
                 .put(group.getLeaders().getField_id(), element.elementText("")));
         JSONObject reuslt = insertTable(paramJson, tableId);
@@ -101,6 +108,7 @@ public class GroupImpl extends BaseHuoBanServ implements IHuoBanService {
 
     /**
      * 班的数据结构字段映射表
+     *
      * @param tableStrucResult
      * @param group
      */

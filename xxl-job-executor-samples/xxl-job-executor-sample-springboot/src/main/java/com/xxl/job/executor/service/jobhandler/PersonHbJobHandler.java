@@ -21,7 +21,7 @@ import java.util.List;
 @JobHandler(value = "PersonHbJobHandler")
 @Component
 public class PersonHbJobHandler extends IJobHandler {
-    public static Cache<String, Object> tableStuckCache = CacheUtil.newFIFOCache(12);
+    public static Cache<String, Object> tableStuckCache = CacheUtil.newFIFOCache(30);
     IHuoBanService iHuoBanService;
 
     @Override
@@ -39,6 +39,8 @@ public class PersonHbJobHandler extends IJobHandler {
         //读取组织结构
         List<Team_Name> team_names = iHuoBanService.readStringXml(xml);
 
+        String personXml=VantopServ.PER_INF_WBS_STAFF(startDate == null ? DateUtil.format(DateTime.now(), "dd/MM/yyyy") : startDate.toString(),
+                endDate == null ? DateUtil.format(DateTime.now(), "dd/MM/yyyy") : endDate.toString());
         SUCCESS.setMsg("获取Tick成功:" + HuoBanConfig.getTicketJson().getStr("ticket") + "有效期截止于："
                 + HuoBanConfig.getTicketJson().getStr("expire_at"));
         return SUCCESS;
@@ -60,6 +62,9 @@ public class PersonHbJobHandler extends IJobHandler {
         huobanServ.setFieldsMap(Sec_DepartImpl.class);
         huobanServ.setFieldsMap(GroupImpl.class);
         huobanServ.setFieldsMap(KeClassImpl.class);
+        huobanServ.setFieldsMap(TeamNameImpl.class);
+        huobanServ.setFieldsMap(StaffInfoImpl.class);
+        huobanServ.setFieldsMap(PostNameImpl.class);
     }
 
 }

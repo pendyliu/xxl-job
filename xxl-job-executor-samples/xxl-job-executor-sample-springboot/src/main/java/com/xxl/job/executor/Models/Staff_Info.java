@@ -13,58 +13,66 @@ public class Staff_Info {
     /**
      * 姓名
      */
-    Map<String,String> staff_name;
+    KeyValueModel staff_name;
     /**
      * 成员
      */
-    Map<String,String> staff_member;
+    KeyValueModel staff_member;
     /**
      * 出生日期
      */
-    Map<String,String> staff_birth;
+    KeyValueModel staff_birth;
     /**
      * 性别
      */
-    Map<String,String> staff_gender;
+    KeyValueModel staff_gender;
     /**
      * 所属公司
      */
-    Map<String,String> company;
+    KeyValueModel company;
     /**
      * 一级部门
      */
-    Map<String,String> fir_depart;
+    KeyValueModel fir_depart;
     /**
      * 二级部门
      */
-    Map<String,String> sec_depart;
+    KeyValueModel sec_depart;
+    /**
+     * 课
+     */
+    KeyValueModel keClass;
+    /**
+     * 班
+     */
+    KeyValueModel group;
     /**
      *班组
      */
-    Map<String,String> team;
+    KeyValueModel team;
     /**
      * 岗位
      */
-    Map<String,String> post;
+    KeyValueModel post;
     /**
      * 当前状态（在职/离职）
      */
-    Map<String,String> staff_status;
+    KeyValueModel staff_status;
     /**
      * 学历
      */
-    Map<String,String> staff_edu;
+    KeyValueModel staff_edu;
     /**
      * 入职时间
      */
-    Map<String,String> entry_time;
+    KeyValueModel entry_time;
     /**
      * 离职时间
      */
-    Map<String,String> separ_time;
+    KeyValueModel separ_time;
     /**
      * 直接上长
      */
-    Map<String,String> superior;
+    KeyValueModel superior;
 
 }

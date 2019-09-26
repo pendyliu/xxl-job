@@ -20,16 +20,17 @@ import static com.xxl.job.executor.service.jobhandler.PersonHbJobHandler.tableSt
 public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
     static Team_Name team_name = new Team_Name();
     public static String rankItemsId = "rankItemsId";
+    public static String rankStruc="team_name";
 
     @Override
     public void createFieldsIdMap() {
-        if (tableStuckCache.get("team_name") == null) {
+        if (tableStuckCache.get(rankStruc) == null) {
             JSONObject jsonObject = getTables(HbTablesId.team_name);
             setFildsMap(jsonObject, team_name);
             /**
              * 将表结构对象存放到缓存当中
              */
-            tableStuckCache.put("team_name", team_name);
+            tableStuckCache.put(rankStruc, team_name);
         }
         if (tableStuckCache.get(rankItemsId) == null) {
             tableStuckCache.put(rankItemsId, new HashMap<>());
@@ -53,7 +54,16 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
 
     @Override
     public void saveItemsId(Map itemMap, String field_code) {
+        //将以组织编码为Key，Map对象为Value的键值存放到缓存中
+        ((Map) tableStuckCache.get(rankItemsId)).put(field_code, itemMap);
+    }
 
+    @Override
+    public String getCacheItemId(Element element) {
+        String teamItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.team_name)
+                .put("field_id", ((Team_Name) tableStuckCache.get("team_name")).getTeam_Code().getField_id())
+                .put("field_value", getOrgNodeName(element, "RANK")), this, element);
+        return teamItemId;
     }
 
     @Override
@@ -75,89 +85,19 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
                 // 获取子节点STAFF下的子节点ROW
                 Iterator iters = recordEle.elementIterator("ROW");
                 // 遍历ROW节点下的Response节点
-                Team_Name teamNameStruc = (Team_Name) tableStuckCache.get("team_name");
                 Company companyStruc = (Company) tableStuckCache.get("company");
 
                 while (iters.hasNext()) {
-                    Team_Name team_name = new Team_Name();
-                    Company company = new Company();
-                    team_name.setCompany_Name((KeyValueModel) teamNameStruc.getCompany_Name().clone());
-                    team_name.setFir_Depart((KeyValueModel) teamNameStruc.getFir_Depart().clone());
-                    team_name.setSec_Depart((KeyValueModel) teamNameStruc.getSec_Depart().clone());
-                    team_name.setT_Class((KeyValueModel) teamNameStruc.getT_Class().clone());
-                    team_name.setGroup((KeyValueModel) teamNameStruc.getGroup().clone());
-                    team_name.setTeam_Code((KeyValueModel) teamNameStruc.getTeam_Code().clone());
-                    team_name.setLeaders((KeyValueModel) teamNameStruc.getLeaders().clone());
+                    Element element = (Element) iters.next();
 
-                    company.setCompany_code((KeyValueModel) companyStruc.getCompany_code().clone());
-                    company.setCompany_name((KeyValueModel) companyStruc.getCompany_name().clone());
-                    company.setCompany_leaders((KeyValueModel) companyStruc.getCompany_leaders().clone());
+                    String teamItemId = new TeamNameImpl().getCacheItemId(element);
+                    String postItemId = new PostNameImpl().getCacheItemId(element);
+                    String companyItemId = new CompanyImpl().getCacheItemId(element);
+                    String firDepartMentItemId =new FirDepartMentImpl().getCacheItemId(element);
+                    String sectionItemId= new Sec_DepartImpl().getCacheItemId(element);
+                    String sub_sectionItemId = new KeClassImpl().getCacheItemId(element);
+                    String cityItemId = new KeClassImpl().getCacheItemId(element);
 
-
-                    Element itemEle = (Element) iters.next();
-                    //把当前节点元素存放到缓存当中
-                    tableStuckCache.put("itemEle", itemEle);
-                    // 拿到STAFF下的子节点ROW下的字节点组织节点的值
-                    team_name.getCompany_Name().setField_value(itemEle.elementText("BRANCH"));
-
-                    String companyItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.comany).
-                            put("field_id", ((Company) tableStuckCache.get("company")).getCompany_code().getField_id()).
-                            put("field_value", itemEle.elementText("BRANCH"))
-                            .put("fieldCnName", itemEle.elementTextTrim("BRANCH_DESCRIPTION")), new CompanyImpl(), itemEle);
-                    team_name.getCompany_Name().setField_value(companyItemId);
-
-                    team_name.getFir_Depart().setField_value(itemEle.elementText("DEPARTMENT"));
-                    String firDepartMentItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.depment)
-                            .put("field_id", ((Fir_Depart) tableStuckCache.get("fir_depart")).getDepart_code().getField_id())
-                            .put("field_value", getOrgNodeName(itemEle, "DEPARTMENT")), new FirDepartMentImpl(), itemEle);
-                    team_name.getFir_Depart().setField_value(firDepartMentItemId);
-
-                    team_name.getSec_Depart().setField_value(itemEle.elementText("SECTION"));
-                    String sectionItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.sec_depart)
-                            .put("field_id", ((Sec_Depart) tableStuckCache.get("sec_depart")).getDepart_code().getField_id())
-                            .put("field_value", getOrgNodeName(itemEle, "SECTION")), new Sec_DepartImpl(), itemEle);
-                    team_name.getSec_Depart().setField_value(sectionItemId);
-
-                    team_name.getT_Class().setField_value(itemEle.elementText("SUB_SECTION"));
-                    String sub_sectionItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.sub_secdepart)
-                            .put("field_id", ((KeClass) tableStuckCache.get("keClass")).getClass_code().getField_id())
-                            .put("field_value", getOrgNodeName(itemEle, "SUB_SECTION")), new KeClassImpl(), itemEle);
-                    team_name.getSec_Depart().setField_value(sub_sectionItemId);
-
-                    team_name.getGroup().setField_value(itemEle.elementText("CITY"));
-                    String cityItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.sub_secdepart)
-                            .put("field_id", ((KeClass) tableStuckCache.get("keClass")).getClass_code().getField_id())
-                            .put("field_value", getOrgNodeName(itemEle, "SUB_SECTION")), new KeClassImpl(), itemEle);
-                    team_name.getT_Class().setField_value(cityItemId);
-
-                    team_name.getTeam_Code().setField_value(itemEle.elementText("RANK"));
-                    team_names.add(team_name);
-//                    orgObj.setBRANCH(itemEle.elementTextTrim("BRANCH"));
-//                    orgObj.setDEPARTMENT(itemEle.elementTextTrim("DEPARTMENT"));
-//                    orgObj.setSECTION(itemEle.elementTextTrim("SECTION"));
-//                    orgObj.setSUB_SECTION(itemEle.elementTextTrim("SUB_SECTION"));
-//                    orgObj.setCITY(itemEle.elementTextTrim("CITY"));
-//                    orgObj.setRANK(itemEle.elementTextTrim("RANK"));
-
-//                    orgObj.setBRANCH_DESCRIPTION(itemEle.elementTextTrim("BRANCH_DESCRIPTION"));
-//                    orgObj.setBRANCH_END(itemEle.elementTextTrim("BRANCH_END"));
-//                    orgObj.setCITY_DESCRIPTION(itemEle.elementTextTrim("CITY_DESCRIPTION"));
-//                    orgObj.setCITY_END(itemEle.elementTextTrim("CITY_END"));
-//                    orgObj.setDEPARTMENT_DESCRIPTION(itemEle.elementTextTrim("DEPARTMENT_DESCRIPT"));
-//                    orgObj.setDEPARTMENT_END(itemEle.elementTextTrim("DEPARTMENT_END"));
-//                    orgObj.setEFFECTIVE_DATE(itemEle.elementTextTrim("EFFECTIVE_DATE"));
-//                    orgObj.setINVALID_DATE(itemEle.elementTextTrim("INVALID_DATE"));
-//                    orgObj.setJOB_TITLE(itemEle.elementTextTrim("JOB_TITLE"));
-//                    orgObj.setMOD_DATE(itemEle.elementTextTrim("MOD_DATE"));
-//                    orgObj.setPOSITION(itemEle.elementTextTrim("POSITION"));
-//                    orgObj.setPOSITION_CODE(itemEle.elementTextTrim("POSITION_CODE"));
-//                    orgObj.setPOSITION_END(itemEle.elementTextTrim("POSITION_END"));
-//                    orgObj.setRANK_DESCRIPTION(itemEle.elementTextTrim("RANK_DESCRIPTION"));
-//                    orgObj.setRANK_END(itemEle.elementTextTrim("RANK_END"));
-//                    orgObj.setSECTION_DESCRIPTION(itemEle.elementTextTrim("SECTION_DESCRIPTION"));
-//                    orgObj.setSECTION_END(itemEle.elementTextTrim("SECTION_END"));
-//                    orgObj.setSUB_DESCRIPTION(itemEle.elementTextTrim("SUB_DESCRIPTION"));
-//                    orgObj.setSUB_SECTION_END(itemEle.elementTextTrim("SUB_SECTION_END"));
                 }
             }
 
@@ -176,18 +116,18 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
         String tableId = HbTablesId.team_name;
         String firDepartCode = getOrgNodeName(element, "DEPARTMENT");
         String sec_depart_code = getOrgNodeName(element, "SECTION");
-        String subSectionCode=getOrgNodeName(element,"SUB_SECTION");
-        String groupCode=getOrgNodeName(element,"CITY");
-        team_name = (Team_Name) tableStuckCache.get(rankItemsId);
+        String subSectionCode = getOrgNodeName(element, "SUB_SECTION");
+        String groupCode = getOrgNodeName(element, "CITY");
+        team_name = (Team_Name) tableStuckCache.get(rankStruc);
         JSONObject paramJson = JSONUtil.createObj().put("fields", JSONUtil.createObj().
                 put(team_name.getCompany_Name().getField_id(),
                         JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(CompanyImpl.companyItemsId))).get(element.elementText("BRANCH"))).get("itemId")))
                 .put(team_name.getFir_Depart().getField_id(), JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(FirDepartMentImpl.firDpartItemsId))).get(firDepartCode)).get("itemId")))
                 .put(team_name.getSec_Depart().getField_id(), JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(Sec_DepartImpl.secDepartItemsId))).get(sec_depart_code)).get("itemId")))
-                .put(team_name.getT_Class().getField_id(),JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(KeClassImpl.keClassItemsId))).get(subSectionCode)).get("itemId")))
-                .put(team_name.getT_Class().getField_id(),JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(GroupImpl.groupItemsId))).get(groupCode)).get("itemId")))
+                .put(team_name.getT_Class().getField_id(), JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(KeClassImpl.keClassItemsId))).get(subSectionCode)).get("itemId")))
+                .put(team_name.getGroup().getField_id(), JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(GroupImpl.groupItemsId))).get(groupCode)).get("itemId")))
                 .put(team_name.getTeam_Code().getField_id(), getOrgNodeName(element, "RANK"))
-                .put(team_name.getTeam_Name().getField_id(),getOrgNodeName(element,"RANK_DESCRIPTION"))
+                .put(team_name.getTeam_Name().getField_id(), getOrgNodeName(element, "RANK_DESCRIPTION"))
                 .put(team_name.getLeaders().getField_id(), element.elementText("")));
         JSONObject reuslt = insertTable(paramJson, tableId);
         return reuslt;

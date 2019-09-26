@@ -3,7 +3,6 @@ package com.xxl.job.executor.serviceHuoban;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.xxl.job.core.log.XxlJobLogger;
 import com.xxl.job.executor.Models.HbTablesId;
 import com.xxl.job.executor.Models.KeClass;
 import com.xxl.job.executor.Models.KeyValueModel;
@@ -26,14 +25,22 @@ public class KeClassImpl extends BaseHuoBanServ implements IHuoBanService {
             setFildsMap(tableStrucResult, keClass);
             tableStuckCache.put("keClass", keClass);
         }
-        if (tableStuckCache.get(keClassItemsId)==null){
-            tableStuckCache.put(keClassItemsId,new HashMap<>());
+        if (tableStuckCache.get(keClassItemsId) == null) {
+            tableStuckCache.put(keClassItemsId, new HashMap<>());
         }
     }
 
     @Override
     public void saveItemsId(Map itemMap, String field_code) {
 
+    }
+
+    @Override
+    public String getCacheItemId(Element element) {
+        String sub_sectionItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.sub_secdepart)
+                .put("field_id", ((KeClass) tableStuckCache.get("keClass")).getClass_code().getField_id())
+                .put("field_value", getOrgNodeName(element, "SUB_SECTION")), this, element);
+        return sub_sectionItemId;
     }
 
     @Override
@@ -66,7 +73,7 @@ public class KeClassImpl extends BaseHuoBanServ implements IHuoBanService {
 
     @Override
     public JSONObject insertTable(Element element) {
-        String tableId = HbTablesId.sec_depart;
+        String tableId = HbTablesId.sub_secdepart;
         String firDepartCode = getOrgNodeName(element, "DEPARTMENT");
         String sec_depart_code = getOrgNodeName(element, "SECTION");
         keClass = (KeClass) tableStuckCache.get("keClass");
@@ -75,7 +82,7 @@ public class KeClassImpl extends BaseHuoBanServ implements IHuoBanService {
                         JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(CompanyImpl.companyItemsId))).get(element.elementText("BRANCH"))).get("itemId")))
                 .put(keClass.getFir_depart().getField_id(), JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(FirDepartMentImpl.firDpartItemsId))).get(firDepartCode)).get("itemId")))
                 .put(keClass.getSec_depart().getField_id(), JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(Sec_DepartImpl.secDepartItemsId))).get(sec_depart_code)).get("itemId")))
-                .put(keClass.getClass_name().getField_id(),getOrgNodeName(element,"SUB_DESCRIPTION"))
+                .put(keClass.getClass_name().getField_id(), getOrgNodeName(element, "SUB_DESCRIPTION"))
                 .put(keClass.getClass_code().getField_id(), getOrgNodeName(element, "SUB_SECTION"))
                 .put(keClass.getLeaders().getField_id(), element.elementText("")));
         JSONObject reuslt = insertTable(paramJson, tableId);

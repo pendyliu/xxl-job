@@ -29,5 +29,9 @@ public class HbTablesId {
      * 人员信息表
      */
     public static String staff_info = "2100000009847502";
+    /**
+     * 岗位基础信息对照表
+     */
+    public static String post_name="2100000009847554";
 
 }

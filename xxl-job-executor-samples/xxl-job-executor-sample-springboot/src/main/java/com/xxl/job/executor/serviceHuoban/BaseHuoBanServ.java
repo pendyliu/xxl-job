@@ -53,7 +53,7 @@ public abstract class BaseHuoBanServ {
                 ((JSONObject) ((JSONArray) result.get("items")).get(0)).get("item_id").toString() : "";
         String cnName = "";
         if (itemId.length() > 0) {
-            JSONObject updateResult = iHuoBanService.updateTable(result.put("fieldCnName", fieldCnName).put("field_code", field_code), element);
+             JSONObject updateResult = iHuoBanService.updateTable(result.put("fieldCnName", fieldCnName).put("field_code", field_code), element);
             cnName = updateResult.getStr("fieldCnName");
             //如果中文名称不一样的话就去更新伙伴系统数据
             if (updateResult.get("rspStatus") != null && ((Integer) updateResult.get("rspStatus")) == 200) {

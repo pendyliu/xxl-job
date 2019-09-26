@@ -31,6 +31,14 @@ public class Sec_DepartImpl extends BaseHuoBanServ implements IHuoBanService {
     }
 
     @Override
+    public String getCacheItemId(Element element) {
+        String sectionItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.sec_depart)
+                .put("field_id", ((Sec_Depart) tableStuckCache.get("sec_depart")).getDepart_code().getField_id())
+                .put("field_value", getOrgNodeName(element, "SECTION")), this, element);
+        return sectionItemId;
+    }
+
+    @Override
     public Map<String, Object> getItemId(JSONObject paramJson, Element element) {
         Object itemId = ((Map<String, Object>) tableStuckCache.get(secDepartItemsId)).get(paramJson.get("field_value"));
         Map<String, Object> itemFieldAndCnName = (Map<String, Object>) itemId;

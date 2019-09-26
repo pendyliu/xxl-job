@@ -43,21 +43,16 @@ public class CompanyImpl extends BaseHuoBanServ implements IHuoBanService<Compan
     public Map<String, Object> getItemId(JSONObject paramJson, Element element) {
         Object itemId = ((Map<String, Object>) tableStuckCache.get(companyItemsId)).get(paramJson.get("field_value"));
         Map<String, Object> itemFieldAndCnName = (Map<String, Object>) itemId;
-//        String result;
-//        if (itemFieldAndCnName == null || !itemFieldAndCnName.get("fieldCnName").equals(paramJson.get("fieldCnName"))) {
-//            try {
-//                JSONArray andWhere = JSONArray.class.newInstance().put(JSONUtil.createObj().put("field", paramJson.get("field_id"))
-//                        .put("query", JSONUtil.createObj().put("eq", paramJson.get("field_value"))));
-//                paramJson.put("where", JSONUtil.createObj().put("and", andWhere)).remove("field_id");
-//            } catch (Exception e) {
-//                XxlJobLogger.log(e.getMessage());
-//            }
-//            //当伙伴接口获取组织的中文名称与本地缓存的中文名称不一致时重新去接口中伙伴接口中获取
-//            result = getItemsId(paramJson, this, element);
-//        } else {
-//            result = itemFieldAndCnName.get("itemId").toString();
-//        }
         return itemFieldAndCnName;
+    }
+
+    @Override
+    public String getCacheItemId(Element element) {
+        String companyItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.comany).
+                put("field_id", ((Company) tableStuckCache.get("company")).getCompany_code().getField_id()).
+                put("field_value", element.elementText("BRANCH"))
+                .put("fieldCnName", element.elementTextTrim("BRANCH_DESCRIPTION")), this, element);
+        return companyItemId;
     }
 
     @Override

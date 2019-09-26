@@ -3,8 +3,6 @@ package com.xxl.job.executor.serviceHuoban;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.xxl.job.core.log.XxlJobLogger;
-import com.xxl.job.executor.Models.Company;
 import com.xxl.job.executor.Models.Fir_Depart;
 import com.xxl.job.executor.Models.HbTablesId;
 import com.xxl.job.executor.Models.KeyValueModel;
@@ -28,9 +26,17 @@ public class FirDepartMentImpl extends BaseHuoBanServ implements IHuoBanService 
             setFildsMap(jsonObject, fir_depart);
             tableStuckCache.put("fir_depart", fir_depart);
         }
-        if (tableStuckCache.get(firDpartItemsId)==null){
-            tableStuckCache.put(firDpartItemsId,new HashMap<>());
+        if (tableStuckCache.get(firDpartItemsId) == null) {
+            tableStuckCache.put(firDpartItemsId, new HashMap<>());
         }
+    }
+
+    @Override
+    public String getCacheItemId(Element element) {
+        String firDepartMentItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.depment)
+                .put("field_id", ((Fir_Depart) tableStuckCache.get("fir_depart")).getDepart_code().getField_id())
+                .put("field_value", getOrgNodeName(element, "DEPARTMENT")), this, element);
+        return firDepartMentItemId;
     }
 
     @Override
