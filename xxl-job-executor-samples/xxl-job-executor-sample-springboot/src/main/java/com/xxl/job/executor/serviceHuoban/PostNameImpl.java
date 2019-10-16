@@ -25,7 +25,7 @@ public class PostNameImpl extends BaseHuoBanServ implements IHuoBanService {
         String postItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.post_name).
                 put("field_id", ((PostName) tableStuckCache.get(PostNameImpl.postNameStruc)).getPostCode().getField_id()).
                 put("field_value", element.elementText("POSITION"))
-                .put("fieldCnName", element.elementTextTrim("JOB_TITLE")), new PostNameImpl(), element);
+                .put("fieldCnName", element.elementTextTrim("JOB_TITLE")), this, element);
         return postItemId;
     }
 

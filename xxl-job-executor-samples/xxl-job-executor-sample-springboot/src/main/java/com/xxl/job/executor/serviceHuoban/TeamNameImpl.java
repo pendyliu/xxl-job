@@ -1,13 +1,11 @@
 package com.xxl.job.executor.serviceHuoban;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.xxl.job.core.log.XxlJobLogger;
-import com.xxl.job.executor.Models.Company;
-import com.xxl.job.executor.Models.HbTablesId;
-import com.xxl.job.executor.Models.KeyValueModel;
-import com.xxl.job.executor.Models.Team_Name;
+import com.xxl.job.executor.Models.*;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
@@ -16,6 +14,7 @@ import org.dom4j.Element;
 import java.util.*;
 
 import static com.xxl.job.executor.service.jobhandler.PersonHbJobHandler.tableStuckCache;
+import static com.xxl.job.executor.serviceHuoban.StaffInfoImpl.staffInfoTbStruc;
 
 /**
  * @author pendy
@@ -146,6 +145,14 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
         resultJson.put("fieldCnName", fieldCnName);
         if (!cnName.equals(fieldCnName)) {
             String itemId = ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("item_id").toString();
+            JSONObject dataJson = JSONUtil.createObj().put(team_name.getTeam_Name().getField_id(), fieldCnName);
+            //如果本节点是最后一个组织节点，更新本组织负责人员
+            if (isEndOrg(element) && !StrUtil.isBlank(element.elementText("Function_Leader"))) {
+                String leaderItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.staff_info)
+                        .put("field_id", ((Staff_Info) tableStuckCache.get(staffInfoTbStruc)).getStaff_number().getField_id())
+                        .put("field_value", element.elementText("Function_Leader")), this, element);
+                dataJson.put(team_name.getLeaders().getField_id(), leaderItemId);
+            }
             JSONObject paramJson = JSONUtil.createObj().put("item_ids", itemId).put("filter", JSONUtil.createObj().put("and",
                     JSONUtil.createArray().put(JSONUtil.createObj().put("field", team_name.getTeam_Code().getField_id())
                             .put("query", JSONUtil.createObj().put("eq", jsonObject.getStr("field_code"))))))
@@ -156,6 +163,10 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
         return resultJson;
     }
 
+    private boolean isEndOrg(Element element) {
+        boolean result = !("A9999".equals(element.elementText("RANK")) || "".equals(element.elementText("RANK")));
+        return result;
+    }
 
     /**
      * 设置字段与字段ID的映射关系
@@ -164,43 +175,38 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
      * @param team_name
      */
     static void setFildsMap(JSONObject jsonObject, Team_Name team_name) {
-        for (int i = 0; i < ((JSONArray) jsonObject.get("field_layout")).size(); i++) {
-            for (Object objects : (JSONArray) jsonObject.get("fields")
-                    ) {
-                JSONArray field_layout = ((JSONArray) jsonObject.get("field_layout"));
-                JSONObject field_id = ((JSONObject) objects);
-                if (field_id.get("field_id").equals(field_layout.get(i))) {
-                    KeyValueModel valueModel = new KeyValueModel();
-                    valueModel.setField_id(field_id.get("field_id").toString());
-                    switch (field_id.get("name").toString()) {
-                        case "公司":
-                            team_name.setCompany_Name(valueModel);
-                            break;
-                        case "一级部门":
-                            team_name.setFir_Depart(valueModel);
-                            break;
-                        case "二级部门":
-                            team_name.setSec_Depart(valueModel);
-                            break;
-                        case "课":
-                            team_name.setT_Class(valueModel);
-                            break;
-                        case "班":
-                            team_name.setGroup(valueModel);
-                            break;
-                        case "班组名称":
-                            team_name.setTeam_Name(valueModel);
-                            break;
-                        case "班组代码":
-                            team_name.setTeam_Code(valueModel);
-                            break;
-                        case "负责人(成员)":
-                            team_name.setLeaders(valueModel);
-                            break;
-                        default:
-                            break;
-                    }
-                }
+        for (Object objects : (JSONArray) jsonObject.get("fields")
+                ) {
+            JSONObject field_id = ((JSONObject) objects);
+            KeyValueModel valueModel = new KeyValueModel();
+            valueModel.setField_id(field_id.get("field_id").toString());
+            switch (field_id.get("alias").toString()) {
+                case "team.company_name":
+                    team_name.setCompany_Name(valueModel);
+                    break;
+                case "team.fir_depart":
+                    team_name.setFir_Depart(valueModel);
+                    break;
+                case "team.sec_depart":
+                    team_name.setSec_Depart(valueModel);
+                    break;
+                case "team.class":
+                    team_name.setT_Class(valueModel);
+                    break;
+                case "team.group":
+                    team_name.setGroup(valueModel);
+                    break;
+                case "team.team_name":
+                    team_name.setTeam_Name(valueModel);
+                    break;
+                case "team.team_code":
+                    team_name.setTeam_Code(valueModel);
+                    break;
+                case "team.leaders":
+                    team_name.setLeaders(valueModel);
+                    break;
+                default:
+                    break;
             }
         }
     }

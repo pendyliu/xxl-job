@@ -54,4 +54,7 @@ public class HuobanServ<T> {
             XxlJobLogger.log(e.getMessage());
         }
     }
+
+
+
 }

@@ -3,6 +3,7 @@ package com.xxl.job.executor.serviceHuoban;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.xxl.job.core.log.XxlJobLogger;
 import com.xxl.job.executor.Models.HbTablesId;
 import com.xxl.job.executor.Models.KeyValueModel;
 import com.xxl.job.executor.Models.Sec_Depart;
@@ -91,21 +92,33 @@ public class Sec_DepartImpl extends BaseHuoBanServ implements IHuoBanService {
 
     @Override
     public JSONObject updateTable(JSONObject jsonObject, Element element) {
-        JSONObject resultJson = JSONUtil.createObj();
-        sec_depart = (Sec_Depart) tableStuckCache.get("sec_depart");
-        List<JSONObject> jsonArray = (List<JSONObject>) ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("fields");
-        String cnName = ((JSONObject) ((JSONArray) jsonArray.stream().filter(p -> p.getStr("field_id").
-                equals(sec_depart.getSec_depart().getField_id())).findFirst().get().get("values")).get(0)).get("value").toString();
-        String fieldCnName = getOrgNodeName(element, "SECTION_DESCRIPTION");
-        resultJson.put("fieldCnName", fieldCnName);
-        if (!cnName.equals(fieldCnName)) {
-            String itemId = ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("item_id").toString();
-            JSONObject paramJson = JSONUtil.createObj().put("item_ids", itemId).put("filter", JSONUtil.createObj().put("and",
-                    JSONUtil.createArray().put(JSONUtil.createObj().put("field", sec_depart.getDepart_code().getField_id())
-                            .put("query", JSONUtil.createObj().put("eq", jsonObject.getStr("field_code"))))))
-                    .put("data", JSONUtil.createObj().put(sec_depart.getSec_depart().getField_id(), fieldCnName));
-            //更新数据
-            resultJson.put("rspStatus", updateTable(HbTablesId.sec_depart, paramJson));
+        JSONObject resultJson = null;
+        try {
+            resultJson = JSONUtil.createObj();
+            sec_depart = (Sec_Depart) tableStuckCache.get("sec_depart");
+            List<JSONObject> jsonArray = (List<JSONObject>) ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("fields");
+            String cnName = ((JSONObject) ((JSONArray) jsonArray.stream().filter(p -> p.getStr("field_id").
+                    equals(sec_depart.getSec_depart().getField_id())).findFirst().get().get("values")).get(0)).get("value").toString();
+            for (JSONObject jsonObject1 : jsonArray) {
+                if (jsonObject1.getStr("field_id").equals(sec_depart.getSec_depart().getField_id())) {
+
+                }
+            }
+
+            String fieldCnName = getOrgNodeName(element, "SECTION_DESCRIPTION");
+            resultJson.put("fieldCnName", fieldCnName);
+            if (!cnName.equals(fieldCnName)) {
+                String itemId = ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("item_id").toString();
+                JSONObject paramJson = JSONUtil.createObj().put("item_ids", itemId).put("filter", JSONUtil.createObj().put("and",
+                        JSONUtil.createArray().put(JSONUtil.createObj().put("field", sec_depart.getDepart_code().getField_id())
+                                .put("query", JSONUtil.createObj().put("eq", jsonObject.getStr("field_code"))))))
+                        .put("data", JSONUtil.createObj().put(sec_depart.getSec_depart().getField_id(), fieldCnName));
+                //更新数据
+                resultJson.put("rspStatus", updateTable(HbTablesId.sec_depart, paramJson));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            XxlJobLogger.log(e.getMessage());
         }
         return resultJson;
     }

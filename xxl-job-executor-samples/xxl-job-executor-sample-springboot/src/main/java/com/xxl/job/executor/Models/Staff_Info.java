@@ -2,8 +2,6 @@ package com.xxl.job.executor.Models;
 
 import lombok.Data;
 
-import java.util.Map;
-
 @Data
 public class Staff_Info {
     /**
@@ -74,5 +72,9 @@ public class Staff_Info {
      * 直接上长
      */
     KeyValueModel superior;
+    /**
+     * 领导层标志
+     */
+    KeyValueModel is_leader;
 
 }
