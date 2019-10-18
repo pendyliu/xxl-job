@@ -1,5 +1,6 @@
 package com.xxl.job.executor.serviceHuoban;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -36,7 +37,7 @@ public class FirDepartMentImpl extends BaseHuoBanServ implements IHuoBanService 
         String firDepartMentItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.depment)
                 .put("field_id", ((Fir_Depart) tableStuckCache.get("fir_depart")).getDepart_code().getField_id())
                 .put("field_value", getOrgNodeName(element, "DEPARTMENT"))
-                .put("fieldCnName",getOrgNodeName(element,"DEPARTMENT_DESCRIPT")), this, element);
+                .put("fieldCnName", getOrgNodeName(element, "DEPARTMENT_DESCRIPT")), this, element, false);
         return firDepartMentItemId;
     }
 
@@ -90,21 +91,35 @@ public class FirDepartMentImpl extends BaseHuoBanServ implements IHuoBanService 
     @Override
     public JSONObject updateTable(JSONObject jsonObject, Element element) {
         JSONObject resultJson = JSONUtil.createObj();
+        String companyItemId = ((Map) ((Map) (tableStuckCache.get(CompanyImpl.companyItemsId))).
+                get(element.elementText("BRANCH"))).get("itemId").toString();
         fir_depart = (Fir_Depart) tableStuckCache.get("fir_depart");
-        List<JSONObject> jsonArray = (List<JSONObject>) ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("fields");
-        String cnName = ((JSONObject) ((JSONArray) jsonArray.stream().filter(p -> p.getStr("field_id").
-                equals(fir_depart.getFir_depart().getField_id())).findFirst().get().get("values")).get(0)).get("value").toString();
         String fieldCnName = getOrgNodeName(element, "DEPARTMENT_DESCRIPT");
         resultJson.put("fieldCnName", fieldCnName);
-        if (!cnName.equals(fieldCnName)) {
-            String itemId = ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("item_id").toString();
-            JSONObject paramJson = JSONUtil.createObj().put("item_ids", itemId).put("filter", JSONUtil.createObj().put("and",
-                    JSONUtil.createArray().put(JSONUtil.createObj().put("field", fir_depart.getDepart_code().getField_id())
-                            .put("query", JSONUtil.createObj().put("eq", jsonObject.getStr("field_code"))))))
-                    .put("data", JSONUtil.createObj().put(fir_depart.getFir_depart().getField_id(), fieldCnName));
-            resultJson.put("rspStatus", updateTable(HbTablesId.depment, paramJson));
+        JSONObject dataJson=JSONUtil.createObj().put(fir_depart.getFir_depart().getField_id(), fieldCnName)
+                .put(fir_depart.getCompany_name().getField_id(),JSONUtil.createArray().put(companyItemId));
+        String itemId = ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("item_id").toString();
+        //如果本节点是最后一个组织节点，更新本组织负责人员
+        if (isEndOrg(element) && !StrUtil.isBlank(element.elementText("Function_Leader"))) {
+            String leaderItemId = getLeaderItemId(element);
+            dataJson.put(fir_depart.getLeaders().getField_id(), JSONUtil.createArray().put(leaderItemId));
         }
+        JSONObject paramJson = JSONUtil.createObj().put("item_ids", itemId).put("filter", JSONUtil.createObj().put("and",
+                JSONUtil.createArray().put(JSONUtil.createObj().put("field", fir_depart.getDepart_code().getField_id())
+                        .put("query", JSONUtil.createObj().put("eq", jsonObject.getStr("field_code"))))))
+                .put("data",dataJson);
+        resultJson.put("rspStatus", updateTable(HbTablesId.depment, paramJson));
+
         return resultJson;
+    }
+
+    private boolean isEndOrg(Element element) {
+        boolean cityIsNull = "A9999".equals(element.elementText("CITY")) || "".equals(element.elementText("CITY"));
+        boolean rankIsNull = "A9999".equals(element.elementText("RANK")) || "".equals(element.elementText("RANK"));
+        boolean subsectionIsNull = "A9999".equals(element.elementText("SUB_SECTION")) || "".equals(element.elementText("SUB_SECTION"));
+        boolean secDepartIsNull = ("A9999".equals(element.elementText("SECTION")) || "".equals(element.elementText("SECTION")));
+        boolean firDepartIsNotNull = !("A9999".equals(element.elementText("DEPARTMENT")) || "".equals(element.elementText("DEPARTMENT")));
+        return cityIsNull && rankIsNull && subsectionIsNull && secDepartIsNull && firDepartIsNotNull;
     }
 
     /**

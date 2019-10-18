@@ -64,7 +64,7 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
             // 获取根节点
             Element rootElt = doc.getRootElement();
             // 拿到根节点的名称
-            System.out.println("根节点：" + rootElt.getName());
+            System.out.println("人员信息更新开始......." );
             // 获取根节点下的子节点STAFF
             Iterator iter = rootElt.elementIterator("STAFF");
             // 遍历STAFF节点
@@ -80,7 +80,7 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
 //                    if (!element.elementText("STAFF_NO").equals("G98778")) {
 //                        continue;
 //                    }
-                    if (Convert.toInt(StrUtil.nullToDefault(element.elementText("isLeader"), "0")) > 0) {
+                    if (Convert.toInt(StrUtil.emptyToDefault(element.elementText("isLeader"), "0")) > 0) {
                         //判断这个人是否有伙伴帐号存在
                         getMemberId(element.elementText("MOBILE_PHONE"));
                     }
@@ -88,12 +88,12 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
                     //获取这个人的上长的ItemId
                     superiorItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.staff_info)
                             .put("field_id", ((Staff_Info) tableStuckCache.get(staffInfoTbStruc)).getStaff_number().getField_id())
-                            .put("field_value", element.elementText("SUPERVISOR_NAME")), this, element);
+                            .put("field_value", element.elementText("SUPERVISOR_NAME")), this, element, true);
 
                     String staffInfoItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.staff_info)
                             .put("field_id", ((Staff_Info) tableStuckCache.get(staffInfoTbStruc)).getStaff_number().getField_id())
-                            .put("field_value", element.elementText("STAFF_NO")), this, element);
-
+                            .put("field_value", element.elementText("STAFF_NO")), this, element, false);
+                    XxlJobLogger.log("工号：" + element.elementText("STAFF_NO") + "  ItemId：" + staffInfoItemId + "更新成功！");
                 }
             }
         } catch (DocumentException e) {
@@ -173,25 +173,28 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
                     format(DateUtil.parse(element.elementText("TERMINATION_DATE").substring(0, 10).replace(" ", "/").replace("//", "/"), "MM/dd/yyyy")) : "";
             String DATE_OF_BIRTH = element.elementText("DATE_OF_BIRTH") != null && !("".equals(element.elementText("DATE_OF_BIRTH"))) ? new SimpleDateFormat("yyyy-MM-dd").
                     format(DateUtil.parse(element.elementText("DATE_OF_BIRTH").substring(0, 10).replace(" ", "/").replace("//", "/"), "MM/dd/yyyy")) : "";
+            JSONObject dataJson = JSONUtil.createObj().put(staffInfo.getStaff_name().getField_id(), element.elementText("STAFF_NAME"))
+                    .put(staffInfo.getStaff_name().getField_id(), element.elementText("STAFF_NAME"))
+                    .put(staffInfo.getStaff_birth().getField_id(), DATE_OF_BIRTH)
+                    .put(staffInfo.getStaff_gender().getField_id(), JSONUtil.createArray().put(sex))
+                    .put(staffInfo.getCompany().getField_id(), JSONUtil.createArray().put(companyItemId))
+                    .put(staffInfo.getFir_depart().getField_id(), JSONUtil.createArray().put(firDepartItemId))
+                    .put(staffInfo.getSec_depart().getField_id(), JSONUtil.createArray().put(sec_depart_code))
+                    .put(staffInfo.getKeClass().getField_id(), JSONUtil.createArray().put(subSectionCode))
+                    .put(staffInfo.getGroup().getField_id(), JSONUtil.createArray().put(groupCode))
+                    .put(staffInfo.getTeam().getField_id(), JSONUtil.createArray().put(teamCode))
+                    .put(staffInfo.getPost().getField_id(), JSONUtil.createArray().put(postItemId))
+                    .put(staffInfo.getStaff_status().getField_id(), JSONUtil.createArray().put(status))
+                    .put(staffInfo.getStaff_edu().getField_id(), element.elementText(""))
+                    .put(staffInfo.getSepar_time().getField_id(), TERMINATION_DATE)
+                    .put(staffInfo.getIs_leader().getField_id(), JSONUtil.createArray().put(isLeader));
+            if (!"".equals(superiorItemId)) {
+                dataJson.put(staffInfo.getSuperior().getField_id(), JSONUtil.createArray().put(superiorItemId));
+            }
             JSONObject paramJson = JSONUtil.createObj().put("item_ids", itemId).put("filter", JSONUtil.createObj().put("and",
                     JSONUtil.createArray().put(JSONUtil.createObj().put("field", staffInfo.getStaff_number().getField_id())
                             .put("query", JSONUtil.createObj().put("eq", element.elementText("STAFF_NO"))))))
-                    .put("data", JSONUtil.createObj().put(staffInfo.getStaff_name().getField_id(), element.elementText("STAFF_NAME"))
-                            .put(staffInfo.getStaff_name().getField_id(), element.elementText("STAFF_NAME"))
-                            .put(staffInfo.getStaff_birth().getField_id(), DATE_OF_BIRTH)
-                            .put(staffInfo.getStaff_gender().getField_id(), JSONUtil.createArray().put(sex))
-                            .put(staffInfo.getCompany().getField_id(), JSONUtil.createArray().put(companyItemId))
-                            .put(staffInfo.getFir_depart().getField_id(), JSONUtil.createArray().put(firDepartItemId))
-                            .put(staffInfo.getSec_depart().getField_id(), JSONUtil.createArray().put(sec_depart_code))
-                            .put(staffInfo.getKeClass().getField_id(), JSONUtil.createArray().put(subSectionCode))
-                            .put(staffInfo.getGroup().getField_id(), JSONUtil.createArray().put(groupCode))
-                            .put(staffInfo.getTeam().getField_id(), JSONUtil.createArray().put(teamCode))
-                            .put(staffInfo.getPost().getField_id(), JSONUtil.createArray().put(postItemId))
-                            .put(staffInfo.getStaff_status().getField_id(), JSONUtil.createArray().put(status))
-                            .put(staffInfo.getStaff_edu().getField_id(), element.elementText(""))
-                            .put(staffInfo.getSepar_time().getField_id(), TERMINATION_DATE)
-                            .put(staffInfo.getSuperior().getField_id(), JSONUtil.createArray().put(superiorItemId))
-                            .put(staffInfo.getIs_leader().getField_id(), JSONUtil.createArray().put(isLeader)));
+                    .put("data", dataJson);
             resultJson.put("rspStatus", updateTable(HbTablesId.staff_info, paramJson));
         } catch (Exception e) {
             e.printStackTrace();

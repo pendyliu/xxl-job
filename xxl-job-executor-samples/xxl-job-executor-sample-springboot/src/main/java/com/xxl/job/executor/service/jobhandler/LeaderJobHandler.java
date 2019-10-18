@@ -30,13 +30,17 @@ public class LeaderJobHandler extends IJobHandler {
             JSONObject result = staffInfoImpl.getLeaderNoHbaccount();
 
             //遍历未绑定成员帐号的名单，待完善......
-            JSONObject memberId = staffInfoImpl.getMemberId("");
-            if (memberId.size() > 0) {
-                JSONObject paramJson = JSONUtil.createObj().put("filter", JSONUtil.createObj().put("and", JSONUtil.createArray()
-                        .put(JSONUtil.createObj().put("field", staffInfo.getStaff_member().getField_id())
-                                .put("query", JSONUtil.createObj().put("eq", "工号")))))
-                        .put("data", JSONUtil.createObj().put(staffInfo.getStaff_member().getField_id(), "user_id"));
-                int i = staffInfoImpl.updateTable(HbTablesId.staff_info, paramJson);
+            for (int i = 0; i < result.size(); i++
+                    ) {
+                String phoneNumber = JSONUtil.parseObj(result.get(i)).getStr("phoneNumber");
+                JSONObject memberId = staffInfoImpl.getMemberId(phoneNumber);
+                if (memberId.size() > 0) {
+                    JSONObject paramJson = JSONUtil.createObj().put("filter", JSONUtil.createObj().put("and", JSONUtil.createArray()
+                            .put(JSONUtil.createObj().put("field", staffInfo.getStaff_member().getField_id())
+                                    .put("query", JSONUtil.createObj().put("eq", "工号")))))
+                            .put("data", JSONUtil.createObj().put(staffInfo.getStaff_member().getField_id(), "user_id"));
+                    int res = staffInfoImpl.updateTable(HbTablesId.staff_info, paramJson);
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();

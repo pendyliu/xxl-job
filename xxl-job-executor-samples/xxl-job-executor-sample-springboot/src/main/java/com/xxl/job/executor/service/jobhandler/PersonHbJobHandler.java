@@ -36,15 +36,17 @@ public class PersonHbJobHandler extends IJobHandler {
 
         HuoBanConfig.getAuthTokenJson();
 
-        String personXml=VantopServ.PER_INF_WBS_STAFF(startDate == null ? DateUtil.format(DateTime.now(), "dd/MM/yyyy") : startDate.toString(),
-                endDate == null ? DateUtil.format(DateTime.now(), "dd/MM/yyyy") : endDate.toString());
-        new StaffInfoImpl().readStringXml(personXml);
 
         //从伙伴接口获取xml组织结构(当任务高度传进来的参数为空的时候取当前的日期，否则取参数日期)
         String xml = VantopServ.PER_INF_WBS_ORG(startDate == null ? DateUtil.format(DateTime.now(), "dd/MM/yyyy") : startDate.toString(),
                 endDate == null ? DateUtil.format(DateTime.now(), "dd/MM/yyyy") : endDate.toString());
         //读取组织结构
         List<Team_Name> team_names = iHuoBanService.readStringXml(xml);
+
+        //读取人员异动信息
+        String personXml=VantopServ.PER_INF_WBS_STAFF(startDate == null ? DateUtil.format(DateTime.now(), "dd/MM/yyyy") : startDate.toString(),
+                endDate == null ? DateUtil.format(DateTime.now(), "dd/MM/yyyy") : endDate.toString());
+        new StaffInfoImpl().readStringXml(personXml);
 
         SUCCESS.setMsg("获取Tick成功:" + HuoBanConfig.getTicketJson().getStr("ticket") + "有效期截止于："
                 + HuoBanConfig.getTicketJson().getStr("expire_at"));

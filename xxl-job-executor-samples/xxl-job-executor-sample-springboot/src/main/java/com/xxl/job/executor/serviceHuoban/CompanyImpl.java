@@ -51,7 +51,8 @@ public class CompanyImpl extends BaseHuoBanServ implements IHuoBanService<Compan
         String companyItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.comany).
                 put("field_id", ((Company) tableStuckCache.get("company")).getCompany_code().getField_id()).
                 put("field_value", element.elementText("BRANCH"))
-                .put("fieldCnName", element.elementTextTrim("BRANCH_DESCRIPTION")), this, element);
+                .put("fieldCnName", element.elementTextTrim("BRANCH_DESCRIPTION")),
+                this, element,false);
         return companyItemId;
     }
 

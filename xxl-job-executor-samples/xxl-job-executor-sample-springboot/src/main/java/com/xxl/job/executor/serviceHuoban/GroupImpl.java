@@ -1,5 +1,6 @@
 package com.xxl.job.executor.serviceHuoban;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -55,9 +56,10 @@ public class GroupImpl extends BaseHuoBanServ implements IHuoBanService {
     @Override
     public String getCacheItemId(Element element) {
         String cityItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.group)
-                .put("field_id", ((Group) tableStuckCache.get(groupStruc)).getGroup_code().getField_id())
-                .put("field_value", getOrgNodeName(element, "CITY"))
-                .put("fieldCnName", getOrgNodeName(element, "CITY_DESCRIPTION")), this, element);
+                        .put("field_id", ((Group) tableStuckCache.get(groupStruc)).getGroup_code().getField_id())
+                        .put("field_value", getOrgNodeName(element, "CITY"))
+                        .put("fieldCnName", getOrgNodeName(element, "CITY_DESCRIPTION")),
+                this, element, false);
         return cityItemId;
     }
 
@@ -90,21 +92,40 @@ public class GroupImpl extends BaseHuoBanServ implements IHuoBanService {
     public JSONObject updateTable(JSONObject jsonObject, Element element) {
         JSONObject resultJson = JSONUtil.createObj();
         group = (Group) tableStuckCache.get(groupStruc);
-        List<JSONObject> jsonArray = (List<JSONObject>) ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("fields");
-        String cnName = ((JSONObject) ((JSONArray) jsonArray.stream().filter(p -> p.getStr("field_id").
-                equals(group.getGroup_name().getField_id())).findFirst().get().get("values")).get(0)).get("value").toString();
+        String companyItemId = ((Map) ((Map) (tableStuckCache.get(CompanyImpl.companyItemsId))).
+                get(element.elementText("BRANCH"))).get("itemId").toString();
+        String secDepartItemId = ((Map) ((Map) (tableStuckCache.get(Sec_DepartImpl.secDepartItemsId))).
+                get(getOrgNodeName(element, "SECTION"))).get("itemId").toString();
+        String firDepartItemId = ((Map) ((Map) (tableStuckCache.get(FirDepartMentImpl.firDpartItemsId))).
+                get(getOrgNodeName(element, "DEPARTMENT"))).get("itemId").toString();
+        String subSectionItemId=((Map) ((Map) (tableStuckCache.get(KeClassImpl.keClassItemsId))).
+                get(getOrgNodeName(element, "SUB_SECTION"))).get("itemId").toString();
         String fieldCnName = getOrgNodeName(element, "CITY_DESCRIPTION");
         resultJson.put("fieldCnName", fieldCnName);
-        if (!cnName.equals(fieldCnName)) {
-            String itemId = ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("item_id").toString();
-            JSONObject paramJson = JSONUtil.createObj().put("item_ids", itemId).put("filter", JSONUtil.createObj().put("and",
-                    JSONUtil.createArray().put(JSONUtil.createObj().put("field", group.getGroup_code().getField_id())
-                            .put("query", JSONUtil.createObj().put("eq", jsonObject.getStr("field_code"))))))
-                    .put("data", JSONUtil.createObj().put(group.getGroup_name().getField_id(), fieldCnName));
-            //更新数据
-            resultJson.put("rspStatus", updateTable(HbTablesId.group, paramJson));
+        String itemId = ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("item_id").toString();
+        JSONObject dataJson = JSONUtil.createObj().put(group.getGroup_name().getField_id(), fieldCnName)
+                .put(group.getCompany_name().getField_id(),JSONUtil.createArray().put(companyItemId))
+                .put(group.getFir_depart().getField_id(),JSONUtil.createArray().put(firDepartItemId))
+                .put(group.getSec_depart().getField_id(),JSONUtil.createArray().put(secDepartItemId))
+                .put(group.getKe_class().getField_id(),JSONUtil.createArray().put(subSectionItemId));
+        //如果本节点是最后一个组织节点，更新本组织负责人员
+        if (isEndOrg(element) && !StrUtil.isBlank(element.elementText("Function_Leader"))) {
+            String leaderItemId = getLeaderItemId(element);
+            dataJson.put(group.getLeaders().getField_id(), JSONUtil.createArray().put(leaderItemId));
         }
+        JSONObject paramJson = JSONUtil.createObj().put("item_ids", itemId).put("filter", JSONUtil.createObj().put("and",
+                JSONUtil.createArray().put(JSONUtil.createObj().put("field", group.getGroup_code().getField_id())
+                        .put("query", JSONUtil.createObj().put("eq", jsonObject.getStr("field_code"))))))
+                .put("data", dataJson);
+        //更新数据
+        resultJson.put("rspStatus", updateTable(HbTablesId.group, paramJson));
         return resultJson;
+    }
+
+    private boolean isEndOrg(Element element) {
+        boolean cityIsNull = !("A9999".equals(element.elementText("CITY")) || "".equals(element.elementText("CITY")));
+        boolean rankIsNull = "A9999".equals(element.elementText("RANK")) || "".equals(element.elementText("RANK"));
+        return cityIsNull && rankIsNull;
     }
 
     /**

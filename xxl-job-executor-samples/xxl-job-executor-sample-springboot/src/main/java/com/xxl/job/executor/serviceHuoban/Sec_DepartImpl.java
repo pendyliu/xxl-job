@@ -1,5 +1,6 @@
 package com.xxl.job.executor.serviceHuoban;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -34,9 +35,10 @@ public class Sec_DepartImpl extends BaseHuoBanServ implements IHuoBanService {
     @Override
     public String getCacheItemId(Element element) {
         String sectionItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.sec_depart)
-                .put("field_id", ((Sec_Depart) tableStuckCache.get("sec_depart")).getDepart_code().getField_id())
-                .put("field_value", getOrgNodeName(element, "SECTION"))
-                .put("fieldCnName", getOrgNodeName(element, "SECTION_DESCRIPTION")), this, element);
+                        .put("field_id", ((Sec_Depart) tableStuckCache.get("sec_depart")).getDepart_code().getField_id())
+                        .put("field_value", getOrgNodeName(element, "SECTION"))
+                        .put("fieldCnName", getOrgNodeName(element, "SECTION_DESCRIPTION")),
+                this, element, false);
         return sectionItemId;
     }
 
@@ -93,34 +95,43 @@ public class Sec_DepartImpl extends BaseHuoBanServ implements IHuoBanService {
     @Override
     public JSONObject updateTable(JSONObject jsonObject, Element element) {
         JSONObject resultJson = null;
+        String companyItemId = ((Map) ((Map) (tableStuckCache.get(CompanyImpl.companyItemsId))).
+                get(element.elementText("BRANCH"))).get("itemId").toString();
+        String firDepartItemId = ((Map) ((Map) (tableStuckCache.get(FirDepartMentImpl.firDpartItemsId))).
+                get(getOrgNodeName(element, "DEPARTMENT"))).get("itemId").toString();
         try {
             resultJson = JSONUtil.createObj();
             sec_depart = (Sec_Depart) tableStuckCache.get("sec_depart");
-            List<JSONObject> jsonArray = (List<JSONObject>) ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("fields");
-            String cnName = ((JSONObject) ((JSONArray) jsonArray.stream().filter(p -> p.getStr("field_id").
-                    equals(sec_depart.getSec_depart().getField_id())).findFirst().get().get("values")).get(0)).get("value").toString();
-            for (JSONObject jsonObject1 : jsonArray) {
-                if (jsonObject1.getStr("field_id").equals(sec_depart.getSec_depart().getField_id())) {
-
-                }
-            }
-
             String fieldCnName = getOrgNodeName(element, "SECTION_DESCRIPTION");
             resultJson.put("fieldCnName", fieldCnName);
-            if (!cnName.equals(fieldCnName)) {
-                String itemId = ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("item_id").toString();
-                JSONObject paramJson = JSONUtil.createObj().put("item_ids", itemId).put("filter", JSONUtil.createObj().put("and",
-                        JSONUtil.createArray().put(JSONUtil.createObj().put("field", sec_depart.getDepart_code().getField_id())
-                                .put("query", JSONUtil.createObj().put("eq", jsonObject.getStr("field_code"))))))
-                        .put("data", JSONUtil.createObj().put(sec_depart.getSec_depart().getField_id(), fieldCnName));
-                //更新数据
-                resultJson.put("rspStatus", updateTable(HbTablesId.sec_depart, paramJson));
+            String itemId = ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("item_id").toString();
+            JSONObject dataJson = JSONUtil.createObj().put(sec_depart.getSec_depart().getField_id(), fieldCnName)
+                    .put(sec_depart.getCompany_name().getField_id(),JSONUtil.createArray().put(companyItemId))
+                    .put(sec_depart.getFir_depart().getField_id(),JSONUtil.createArray().put(firDepartItemId));
+            //如果本节点是最后一个组织节点，更新本组织负责人员
+            if (isEndOrg(element) && !StrUtil.isBlank(element.elementText("Function_Leader"))) {
+                String leaderItemId = getLeaderItemId(element);
+                dataJson.put(sec_depart.getLeaders().getField_id(), JSONUtil.createArray().put(leaderItemId));
             }
+            JSONObject paramJson = JSONUtil.createObj().put("item_ids", itemId).put("filter", JSONUtil.createObj().put("and",
+                    JSONUtil.createArray().put(JSONUtil.createObj().put("field", sec_depart.getDepart_code().getField_id())
+                            .put("query", JSONUtil.createObj().put("eq", jsonObject.getStr("field_code"))))))
+                    .put("data", dataJson);
+            //更新数据
+            resultJson.put("rspStatus", updateTable(HbTablesId.sec_depart, paramJson));
         } catch (Exception e) {
             e.printStackTrace();
             XxlJobLogger.log(e.getMessage());
         }
         return resultJson;
+    }
+
+    private boolean isEndOrg(Element element) {
+        boolean cityIsNull = "A9999".equals(element.elementText("CITY")) || "".equals(element.elementText("CITY"));
+        boolean rankIsNull = "A9999".equals(element.elementText("RANK")) || "".equals(element.elementText("RANK"));
+        boolean subsectionIsNull = "A9999".equals(element.elementText("SUB_SECTION")) || "".equals(element.elementText("SUB_SECTION"));
+        boolean secDepartIsNotNull = !("A9999".equals(element.elementText("SECTION")) || "".equals(element.elementText("SECTION")));
+        return cityIsNull && rankIsNull && subsectionIsNull && secDepartIsNotNull;
     }
 
     /**

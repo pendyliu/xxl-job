@@ -5,7 +5,10 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.xxl.job.core.log.XxlJobLogger;
-import com.xxl.job.executor.Models.*;
+import com.xxl.job.executor.Models.Company;
+import com.xxl.job.executor.Models.HbTablesId;
+import com.xxl.job.executor.Models.KeyValueModel;
+import com.xxl.job.executor.Models.Team_Name;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
@@ -14,7 +17,6 @@ import org.dom4j.Element;
 import java.util.*;
 
 import static com.xxl.job.executor.service.jobhandler.PersonHbJobHandler.tableStuckCache;
-import static com.xxl.job.executor.serviceHuoban.StaffInfoImpl.staffInfoTbStruc;
 
 /**
  * @author pendy
@@ -65,7 +67,7 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
         String teamItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.team_name)
                 .put("field_id", ((Team_Name) tableStuckCache.get("team_name")).getTeam_Code().getField_id())
                 .put("field_value", getOrgNodeName(element, "RANK"))
-                .put("fieldCnName", getOrgNodeName(element, "RANK_DESCRIPTION")), this, element);
+                .put("fieldCnName", getOrgNodeName(element, "RANK_DESCRIPTION")), this, element,false);
         return teamItemId;
     }
 
@@ -137,29 +139,41 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
     @Override
     public JSONObject updateTable(JSONObject jsonObject, Element element) {
         JSONObject resultJson = JSONUtil.createObj();
+        String companyItemId = ((Map) ((Map) (tableStuckCache.get(CompanyImpl.companyItemsId))).
+                get(element.elementText("BRANCH"))).get("itemId").toString();
+        String secDepartItemId = ((Map) ((Map) (tableStuckCache.get(Sec_DepartImpl.secDepartItemsId))).
+                get(getOrgNodeName(element, "SECTION"))).get("itemId").toString();
+        String firDepartItemId = ((Map) ((Map) (tableStuckCache.get(FirDepartMentImpl.firDpartItemsId))).
+                get(getOrgNodeName(element, "DEPARTMENT"))).get("itemId").toString();
+        String subSectionItemId=((Map) ((Map) (tableStuckCache.get(KeClassImpl.keClassItemsId))).
+                get(getOrgNodeName(element, "SUB_SECTION"))).get("itemId").toString();
+        String groupItemId = ((Map) ((Map) (tableStuckCache.get(GroupImpl.groupItemsId))).
+                get(getOrgNodeName(element, "CITY"))).get("itemId").toString();
         team_name = (Team_Name) tableStuckCache.get("team_name");
-        List<JSONObject> jsonArray = (List<JSONObject>) ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("fields");
-        String cnName = ((JSONObject) ((JSONArray) jsonArray.stream().filter(p -> p.getStr("field_id").
-                equals(team_name.getTeam_Name().getField_id())).findFirst().get().get("values")).get(0)).get("value").toString();
+//        List<JSONObject> jsonArray = (List<JSONObject>) ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("fields");
+//        String cnName = ((JSONObject) ((JSONArray) jsonArray.stream().filter(p -> p.getStr("field_id").
+//                equals(team_name.getTeam_Name().getField_id())).findFirst().get().get("values")).get(0)).get("value").toString();
         String fieldCnName = getOrgNodeName(element, "RANK_DESCRIPTION");
         resultJson.put("fieldCnName", fieldCnName);
-        if (!cnName.equals(fieldCnName)) {
-            String itemId = ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("item_id").toString();
-            JSONObject dataJson = JSONUtil.createObj().put(team_name.getTeam_Name().getField_id(), fieldCnName);
-            //如果本节点是最后一个组织节点，更新本组织负责人员
-            if (isEndOrg(element) && !StrUtil.isBlank(element.elementText("Function_Leader"))) {
-                String leaderItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.staff_info)
-                        .put("field_id", ((Staff_Info) tableStuckCache.get(staffInfoTbStruc)).getStaff_number().getField_id())
-                        .put("field_value", element.elementText("Function_Leader")), this, element);
-                dataJson.put(team_name.getLeaders().getField_id(), leaderItemId);
-            }
-            JSONObject paramJson = JSONUtil.createObj().put("item_ids", itemId).put("filter", JSONUtil.createObj().put("and",
-                    JSONUtil.createArray().put(JSONUtil.createObj().put("field", team_name.getTeam_Code().getField_id())
-                            .put("query", JSONUtil.createObj().put("eq", jsonObject.getStr("field_code"))))))
-                    .put("data", JSONUtil.createObj().put(team_name.getTeam_Name().getField_id(), fieldCnName));
-            //更新数据
-            resultJson.put("rspStatus", updateTable(HbTablesId.team_name, paramJson));
+        String leaderItemId = getLeaderItemId(element);
+        String itemId = ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("item_id").toString();
+        JSONObject dataJson = JSONUtil.createObj().put(team_name.getTeam_Name().getField_id(), fieldCnName)
+                .put(team_name.getCompany_Name().getField_id(),JSONUtil.createArray().put(companyItemId))
+                .put(team_name.getFir_Depart().getField_id(), JSONUtil.createArray().put(firDepartItemId))
+                .put(team_name.getSec_Depart().getField_id(), JSONUtil.createArray().put(secDepartItemId))
+                .put(team_name.getT_Class().getField_id(), JSONUtil.createArray().put(subSectionItemId))
+                .put(team_name.getGroup().getField_id(), JSONUtil.createArray().put(groupItemId));
+        //如果本节点是最后一个组织节点，更新本组织负责人员
+        if (isEndOrg(element) && !StrUtil.isBlank(element.elementText("Function_Leader"))) {
+            dataJson.put(team_name.getLeaders().getField_id(), leaderItemId);
         }
+        JSONObject paramJson = JSONUtil.createObj().put("item_ids", itemId).put("filter", JSONUtil.createObj().put("and",
+                JSONUtil.createArray().put(JSONUtil.createObj().put("field", team_name.getTeam_Code().getField_id())
+                        .put("query", JSONUtil.createObj().put("eq", jsonObject.getStr("field_code"))))))
+                .put("data", dataJson);
+
+        //更新数据
+        resultJson.put("rspStatus", updateTable(HbTablesId.team_name, paramJson));
         return resultJson;
     }
 

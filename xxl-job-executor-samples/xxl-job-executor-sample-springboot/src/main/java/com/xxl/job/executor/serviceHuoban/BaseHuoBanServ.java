@@ -9,11 +9,16 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.xxl.job.core.log.XxlJobLogger;
+import com.xxl.job.executor.Models.HbTablesId;
+import com.xxl.job.executor.Models.Staff_Info;
 import com.xxl.job.executor.core.config.HuoBanConfig;
 import org.dom4j.Element;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import static com.xxl.job.executor.service.jobhandler.PersonHbJobHandler.tableStuckCache;
+import static com.xxl.job.executor.serviceHuoban.StaffInfoImpl.staffInfoTbStruc;
 
 public abstract class BaseHuoBanServ {
     /**
@@ -22,12 +27,10 @@ public abstract class BaseHuoBanServ {
      * @param paramJson 有几个Key{ tableId、field_id、field_value}
      * @return
      */
-    public String getItemsId(JSONObject paramJson, IHuoBanService iHuoBanService, Element element) {
+    public String getItemsId(JSONObject paramJson, IHuoBanService iHuoBanService, Element element, boolean isSuperior) {
         String tableId = paramJson.getStr("tableId");
         String field_code = paramJson.getStr("field_value");
         String fieldCnName = paramJson.getStr("fieldCnName");
-        //判断是否是获取上长的ItemId，如果是就不用再去更新或插入
-        boolean isSuperior = element.elementText("SUPERVISOR_NAME").equals(paramJson.getStr("field_value"));
         try {
             JSONArray andWhere = JSONArray.class.newInstance().put(JSONUtil.createObj().put("field", paramJson.get("field_id"))
                     .put("query", JSONUtil.createObj().put("eq", paramJson.get("field_value"))));
@@ -52,8 +55,8 @@ public abstract class BaseHuoBanServ {
                 JSONObject updateResult = iHuoBanService.updateTable(result.put("fieldCnName", fieldCnName).put("field_code", field_code), element);
                 cnName = updateResult.getStr("fieldCnName");
                 //如果中文名称不一样的话就去更新伙伴系统数据
-                if (updateResult.get("rspStatus") != null && ((Integer) updateResult.get("rspStatus")) == 200) {
-                    XxlJobLogger.log(element.elementText("BRANCH") + "组织名称更新为：" + element.elementText("BRANCH_DESCRIPTION"));
+                if (updateResult.get("rspStatus") !=null && ((Integer) updateResult.get("rspStatus")) != 200) {
+                    XxlJobLogger.log(element.elementText("BRANCH") + "组织更新失败！");
                 }
             } else {
                 //如果组织节点不存在就插入进去
@@ -73,11 +76,11 @@ public abstract class BaseHuoBanServ {
 
     protected JSONObject getJsonObject(JSONObject paramJson, String tableId) {
         return JSONUtil.parseObj(UnicodeUtil.toString(HttpRequest.post(StrUtil.format(
-                    HuoBanConfig.props.getProperty("HuoBanBaseURL") + "v2/item/table/{}/find", tableId))
-                    .header(Header.CONTENT_TYPE, "application/json")
-                    .header("X-Huoban-Ticket", HuoBanConfig.getTicketJson().get("ticket").toString())
-                    .body(paramJson.toString())
-                    .execute().body()));
+                HuoBanConfig.props.getProperty("HuoBanBaseURL") + "v2/item/table/{}/find", tableId))
+                .header(Header.CONTENT_TYPE, "application/json")
+                .header("X-Huoban-Ticket", HuoBanConfig.getTicketJson().get("ticket").toString())
+                .body(paramJson.toString())
+                .execute().body()));
     }
 
     /**
@@ -86,12 +89,12 @@ public abstract class BaseHuoBanServ {
      * @param paramJson
      * @return 如果缓存中存在值就返回缓存内容，如果缓存中没有就直接从接口里面去获取数据
      */
-    public String getCacheItemsId(JSONObject paramJson, IHuoBanService iHuoBanService, Element element) {
+    public String getCacheItemsId(JSONObject paramJson, IHuoBanService iHuoBanService, Element element, boolean isSuperior) {
         Map<String, Object> itemFieldAndCnName = (Map<String, Object>) iHuoBanService.getItemId(paramJson, element);
         String result;
         if (itemFieldAndCnName == null || !itemFieldAndCnName.get("fieldCnName").equals(paramJson.get("fieldCnName"))) {
             //当伙伴接口获取组织的中文名称与本地缓存的中文名称不一致时重新去接口中伙伴接口中获取
-            result = getItemsId(paramJson, iHuoBanService, element);
+            result = getItemsId(paramJson, iHuoBanService, element, isSuperior);
         } else {
             result = itemFieldAndCnName.get("itemId").toString();
         }
@@ -129,6 +132,11 @@ public abstract class BaseHuoBanServ {
                 header(Header.CONTENT_TYPE, "application/json").
                 header("X-Huoban-Ticket", HuoBanConfig.getTicketJson().get("ticket").toString()).
                 body(paramJson.toString()).execute();
+        if (response.getStatus() == 500) {
+            String resMsg = JSONUtil.parseObj(UnicodeUtil.toString(StrUtil.utf8Str(response.bodyBytes()))).getStr("message");
+            XxlJobLogger.log(resMsg);
+            System.out.println(resMsg);
+        }
         return response.getStatus();
     }
 
@@ -161,6 +169,18 @@ public abstract class BaseHuoBanServ {
                 .header("X-Huoban-Ticket", HuoBanConfig.getTicketJson().getStr("ticket"))
                 .execute().body()));
         return result;
+    }
+
+    /**
+     * 获取上长的ItemId
+     *
+     * @param element
+     * @return
+     */
+    public String getLeaderItemId(Element element) {
+        return getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.staff_info)
+                .put("field_id", ((Staff_Info) tableStuckCache.get(staffInfoTbStruc)).getStaff_number().getField_id())
+                .put("field_value", element.elementText("Function_Leader")), new TeamNameImpl(), element, true);
     }
 
     /**
