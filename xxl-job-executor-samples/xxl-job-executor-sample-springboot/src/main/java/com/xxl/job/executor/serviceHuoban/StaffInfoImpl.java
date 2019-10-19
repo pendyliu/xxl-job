@@ -103,6 +103,7 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
         } finally {
 
         }
+        System.out.println("更新完成！");
         return null;
     }
 
@@ -119,11 +120,16 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
         int sex = element.elementText("SEX") == "W" ? 2 : 1;
         int status = element.elementText("STATUS") == "T" ? 2 : 1;
         int isLeader = Convert.toInt(StrUtil.blankToDefault(element.elementText("isLeader"), "2"));
+        String memberUserId="";
+        if (Convert.toInt(StrUtil.emptyToDefault(element.elementText("isLeader"), "0")) > 0) {
+            //判断这个人是否有伙伴帐号存在
+            memberUserId= getMemberId(element.elementText("MOBILE_PHONE"));
+        }
         String TERMINATION_DATE = element.elementText("TERMINATION_DATE") != null && !(element.elementText("TERMINATION_DATE").equals("")) ? new SimpleDateFormat("yyyy-MM-dd").
                 format(DateUtil.parse(element.elementText("TERMINATION_DATE").substring(0, 10).replace(" ", "/").replace("//", "/"), "MM/dd/yyyy")) : "";
         String DATE_OF_BIRTH = element.elementText("DATE_OF_BIRTH") != null && !("".equals(element.elementText("DATE_OF_BIRTH"))) ? new SimpleDateFormat("yyyy-MM-dd").
                 format(DateUtil.parse(element.elementText("DATE_OF_BIRTH").substring(0, 10).replace(" ", "/").replace("//", "/"), "MM/dd/yyyy")) : "";
-        JSONObject staffInfoJson = JSONUtil.createObj().put("fields", JSONUtil.createObj().
+        JSONObject dataJson = JSONUtil.createObj().put("fields", JSONUtil.createObj().
                 put(staffInfo.getStaff_number().getField_id(), element.elementText("STAFF_NO"))
                 .put(staffInfo.getStaff_name().getField_id(), element.elementText("STAFF_NAME"))
                 .put(staffInfo.getStaff_birth().getField_id(), DATE_OF_BIRTH)
@@ -140,12 +146,15 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
                 .put(staffInfo.getIs_leader().getField_id(), JSONUtil.createArray().put(isLeader))
         );
         if (!"".equals(postItemId)) {
-            staffInfoJson.put(staffInfo.getPost().getField_id(), JSONUtil.createArray().put(postItemId));
+            dataJson.put(staffInfo.getPost().getField_id(), JSONUtil.createArray().put(postItemId));
         }
         if (!"".equals(superiorItemId)) {
-            staffInfoJson.put(staffInfo.getSuperior().getField_id(), JSONUtil.createArray().put(superiorItemId));
+            dataJson.put(staffInfo.getSuperior().getField_id(), JSONUtil.createArray().put(superiorItemId));
         }
-        JSONObject result = insertTable(staffInfoJson, HbTablesId.staff_info);
+        if (!"".equals(memberUserId)){
+            dataJson.put(staffInfo.getStaff_member().getField_id(),JSONUtil.createArray().put(memberUserId));
+        }
+        JSONObject result = insertTable(dataJson, HbTablesId.staff_info);
         return result;
     }
 
@@ -164,6 +173,11 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
             int status = element.elementText("STATUS") == "T" ? 2 : 1;
             int sex = element.elementText("SEX") == "W" ? 2 : 1;
             int isLeader = Convert.toInt(StrUtil.blankToDefault(element.elementText("isLeader"), "2"));
+            String memberUserId="";
+            if (Convert.toInt(StrUtil.emptyToDefault(element.elementText("isLeader"), "0")) > 0) {
+                //判断这个人是否有伙伴帐号存在
+                memberUserId= getMemberId(element.elementText("MOBILE_PHONE"));
+            }
             String cnName = StrUtil.split(((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("title").toString(), "")[0];
             String fieldCnName = jsonObject.getStr("fieldCnName") == null ? element.elementText("STAFF_NAME") : jsonObject.getStr("fieldCnName");
             resultJson.put("fieldCnName", fieldCnName);
@@ -190,6 +204,9 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
                     .put(staffInfo.getIs_leader().getField_id(), JSONUtil.createArray().put(isLeader));
             if (!"".equals(superiorItemId)) {
                 dataJson.put(staffInfo.getSuperior().getField_id(), JSONUtil.createArray().put(superiorItemId));
+            }
+            if (!"".equals(memberUserId)){
+                dataJson.put(staffInfo.getStaff_member().getField_id(),JSONUtil.createArray().put(memberUserId));
             }
             JSONObject paramJson = JSONUtil.createObj().put("item_ids", itemId).put("filter", JSONUtil.createObj().put("and",
                     JSONUtil.createArray().put(JSONUtil.createObj().put("field", staffInfo.getStaff_number().getField_id())

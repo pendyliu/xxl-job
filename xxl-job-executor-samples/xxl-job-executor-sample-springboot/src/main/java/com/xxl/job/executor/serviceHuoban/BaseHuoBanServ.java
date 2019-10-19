@@ -55,7 +55,7 @@ public abstract class BaseHuoBanServ {
                 JSONObject updateResult = iHuoBanService.updateTable(result.put("fieldCnName", fieldCnName).put("field_code", field_code), element);
                 cnName = updateResult.getStr("fieldCnName");
                 //如果中文名称不一样的话就去更新伙伴系统数据
-                if (updateResult.get("rspStatus") !=null && ((Integer) updateResult.get("rspStatus")) != 200) {
+                if (updateResult.get("rspStatus") != null && ((Integer) updateResult.get("rspStatus")) != 200) {
                     XxlJobLogger.log(element.elementText("BRANCH") + "组织更新失败！");
                 }
             } else {
@@ -140,7 +140,7 @@ public abstract class BaseHuoBanServ {
         return response.getStatus();
     }
 
-    public JSONObject getMemberId(String phoneNumber) {
+    public String getMemberId(String phoneNumber) {
         String url = HuoBanConfig.props.getProperty("HuoBanBaseURL") + "v2/company_members/company/" + HuoBanConfig.props.getProperty("companyId");
         JSONObject paramJson = JSONUtil.createObj();
         paramJson.put("limit", 1)
@@ -152,7 +152,7 @@ public abstract class BaseHuoBanServ {
                 .header(Header.HOST, "api.huoban.com")
                 .header("Authorization", "Bearer " + HuoBanConfig.getAuthTokenJson().getStr("access_token"))
                 .body(paramJson.toString()).execute().body()));
-        return result;
+        return result.getStr("total") == "0" ? "" : result.getStr("user_id");
     }
 
     /**

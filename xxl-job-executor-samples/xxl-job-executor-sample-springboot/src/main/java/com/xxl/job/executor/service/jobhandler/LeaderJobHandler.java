@@ -33,8 +33,8 @@ public class LeaderJobHandler extends IJobHandler {
             for (int i = 0; i < result.size(); i++
                     ) {
                 String phoneNumber = JSONUtil.parseObj(result.get(i)).getStr("phoneNumber");
-                JSONObject memberId = staffInfoImpl.getMemberId(phoneNumber);
-                if (memberId.size() > 0) {
+                String memberId = staffInfoImpl.getMemberId(phoneNumber);
+                if (memberId.length() > 0) {
                     JSONObject paramJson = JSONUtil.createObj().put("filter", JSONUtil.createObj().put("and", JSONUtil.createArray()
                             .put(JSONUtil.createObj().put("field", staffInfo.getStaff_member().getField_id())
                                     .put("query", JSONUtil.createObj().put("eq", "工号")))))
