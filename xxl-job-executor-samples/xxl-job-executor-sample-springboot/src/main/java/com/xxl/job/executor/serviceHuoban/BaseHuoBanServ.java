@@ -20,14 +20,14 @@ import java.util.Map;
 import static com.xxl.job.executor.service.jobhandler.PersonHbJobHandler.tableStuckCache;
 import static com.xxl.job.executor.serviceHuoban.StaffInfoImpl.staffInfoTbStruc;
 
-public abstract class BaseHuoBanServ {
+public abstract class BaseHuoBanServ<T> {
     /**
      * 从伙伴接口数据内容表中获取itemsId     *
      *
      * @param paramJson 有几个Key{ tableId、field_id、field_value}
      * @return
      */
-    public String getItemsId(JSONObject paramJson, IHuoBanService iHuoBanService, Element element, boolean isSuperior) {
+    public String getItemsIdFromRemote(JSONObject paramJson, IHuoBanService iHuoBanService, Element element, boolean isSuperior) {
         String tableId = paramJson.getStr("tableId");
         String field_code = paramJson.getStr("field_value");
         String fieldCnName = paramJson.getStr("fieldCnName");
@@ -43,8 +43,9 @@ public abstract class BaseHuoBanServ {
         paramJson.remove("tableId");
         paramJson.remove("field_value");
         paramJson.remove("fieldCnName");
+        JSONObject result = getJsonObject(paramJson, tableId, "find");
 
-        JSONObject result = getJsonObject(paramJson, tableId);
+
         //定义一个存放itemId和中文名的Map对象
         Map<String, String> itemMap = new HashMap<>();
         String itemId = ((JSONArray) result.get("items")).size() > 0 ?
@@ -61,8 +62,10 @@ public abstract class BaseHuoBanServ {
             } else {
                 //如果组织节点不存在就插入进去
                 result = iHuoBanService.insertTable(element);
-                itemId = result.get("item_id").toString();
-                cnName = StrUtil.split(result.get("title").toString(), "")[0];
+                if (result != null) {
+                    itemId = result.get("item_id").toString();
+                    cnName = StrUtil.split(result.get("title").toString(), "")[0];
+                }
             }
             //将中文名称放到Map对象中
             itemMap.put("fieldCnName", cnName);
@@ -74,13 +77,39 @@ public abstract class BaseHuoBanServ {
         return itemId;
     }
 
-    protected JSONObject getJsonObject(JSONObject paramJson, String tableId) {
+    /**
+     * 查询和删除通用post操作接口
+     *
+     * @param paramJson
+     * @param tableId
+     * @param opFlag    find 或 delete
+     * @return
+     */
+    protected JSONObject getJsonObject(JSONObject paramJson, String tableId, String opFlag) {
         return JSONUtil.parseObj(UnicodeUtil.toString(HttpRequest.post(StrUtil.format(
-                HuoBanConfig.props.getProperty("HuoBanBaseURL") + "v2/item/table/{}/find", tableId))
+                HuoBanConfig.props.getProperty("HuoBanBaseURL") + "v2/item/table/{}/{}", tableId, opFlag))
                 .header(Header.CONTENT_TYPE, "application/json")
                 .header("X-Huoban-Ticket", HuoBanConfig.getTicketJson().get("ticket").toString())
                 .body(paramJson.toString())
                 .execute().body()));
+    }
+
+    /**
+     * 查询和删除通用post操作接口
+     *
+     * @param paramJson
+     * @param tableId
+     * @return
+     */
+    protected boolean deleteJsonObject(JSONObject paramJson, String tableId) {
+        int res = HttpRequest.post(StrUtil.format(
+                HuoBanConfig.props.getProperty("HuoBanBaseURL") + "v2/item/table/{}/delete", tableId))
+                .header(Header.CONTENT_TYPE, "application/json")
+                .header("X-Huoban-Ticket", HuoBanConfig.getTicketJson().get("ticket").toString())
+                .body(paramJson.toString())
+                .execute().getStatus();
+        System.out.println("已经删除成功！");
+        return res == 200 ? true : false;
     }
 
     /**
@@ -90,11 +119,11 @@ public abstract class BaseHuoBanServ {
      * @return 如果缓存中存在值就返回缓存内容，如果缓存中没有就直接从接口里面去获取数据
      */
     public String getCacheItemsId(JSONObject paramJson, IHuoBanService iHuoBanService, Element element, boolean isSuperior) {
-        Map<String, Object> itemFieldAndCnName = (Map<String, Object>) iHuoBanService.getItemId(paramJson, element);
+        Map<String, Object> itemFieldAndCnName = (Map<String, Object>) iHuoBanService.getLocalItemId(paramJson, element);
         String result;
         if (itemFieldAndCnName == null || !itemFieldAndCnName.get("fieldCnName").equals(paramJson.get("fieldCnName"))) {
             //当伙伴接口获取组织的中文名称与本地缓存的中文名称不一致时重新去接口中伙伴接口中获取
-            result = getItemsId(paramJson, iHuoBanService, element, isSuperior);
+            result = getItemsIdFromRemote(paramJson, iHuoBanService, element, isSuperior);
         } else {
             result = itemFieldAndCnName.get("itemId").toString();
         }
@@ -140,6 +169,12 @@ public abstract class BaseHuoBanServ {
         return response.getStatus();
     }
 
+    /**
+     * 获取会员帐号
+     *
+     * @param phoneNumber
+     * @return
+     */
     public String getMemberId(String phoneNumber) {
         String url = HuoBanConfig.props.getProperty("HuoBanBaseURL") + "v2/company_members/company/" + HuoBanConfig.props.getProperty("companyId");
         JSONObject paramJson = JSONUtil.createObj();
@@ -181,6 +216,18 @@ public abstract class BaseHuoBanServ {
         return getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.staff_info)
                 .put("field_id", ((Staff_Info) tableStuckCache.get(staffInfoTbStruc)).getStaff_number().getField_id())
                 .put("field_value", element.elementText("Function_Leader")), new TeamNameImpl(), element, true);
+    }
+
+    public boolean deleteTable(Class<T> t, Element element) {
+        boolean result = false;
+        try {
+            IHuoBanService iHuoBanService = (IHuoBanService) t.newInstance();
+            result = iHuoBanService.deleteTable(element);
+        } catch (Exception e) {
+            e.printStackTrace();
+            XxlJobLogger.log(e.getMessage());
+        }
+        return result;
     }
 
     /**

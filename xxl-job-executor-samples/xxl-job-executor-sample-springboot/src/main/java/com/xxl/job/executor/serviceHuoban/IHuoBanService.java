@@ -26,7 +26,8 @@ public interface IHuoBanService<T> {
      *
      * @param paramJson
      */
-    Map getItemId(JSONObject paramJson, Element element);
+    Map getLocalItemId(JSONObject paramJson, Element element);
+
 
     /**
      * 获取每个节点的ItemId
@@ -66,5 +67,11 @@ public interface IHuoBanService<T> {
      */
     void saveItemsId(Map itemMap, String field_code);
 
+    /**
+     * 删除失效的组织
+     * @param element
+     * @return
+     */
+    boolean deleteTable(Element element);
 
 }

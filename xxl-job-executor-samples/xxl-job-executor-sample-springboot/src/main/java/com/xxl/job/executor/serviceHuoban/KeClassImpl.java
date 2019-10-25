@@ -19,17 +19,34 @@ public class KeClassImpl extends BaseHuoBanServ implements IHuoBanService {
     KeClass keClass = new KeClass();
     public static String keClassItemsId = "keClassItemsId";
     String keClassStruc = "keClass";
+    String companyItemId;
+    String secDepartItemId;
+    String firDepartItemId;
 
     @Override
     public void createFieldsIdMap() {
-        if (tableStuckCache.get("keClass") == null) {
+        if (tableStuckCache.get(keClassStruc) == null) {
             JSONObject tableStrucResult = getTables(HbTablesId.sub_secdepart);
             setFildsMap(tableStrucResult, keClass);
-            tableStuckCache.put("keClass", keClass);
+            tableStuckCache.put(keClassStruc, keClass);
         }
         if (tableStuckCache.get(keClassItemsId) == null) {
             tableStuckCache.put(keClassItemsId, new HashMap<>());
         }
+    }
+
+    /**
+     * 获取所有父节点的ItemsID
+     *
+     * @param element
+     */
+    public void getOrgItemsId(Element element) {
+        companyItemId = ((Map) ((Map) (tableStuckCache.get(CompanyImpl.companyItemsId))).
+                get(element.elementText("BRANCH"))).get("itemId").toString();
+        secDepartItemId = ((Map) ((Map) (tableStuckCache.get(Sec_DepartImpl.secDepartItemsId))).
+                get(getOrgNodeName(element, "SECTION"))).get("itemId").toString();
+        firDepartItemId = ((Map) ((Map) (tableStuckCache.get(FirDepartMentImpl.firDpartItemsId))).
+                get(getOrgNodeName(element, "DEPARTMENT"))).get("itemId").toString();
     }
 
     @Override
@@ -37,6 +54,29 @@ public class KeClassImpl extends BaseHuoBanServ implements IHuoBanService {
         //将以组织编码为Key，Map对象为Value的键值存放到缓存中
         ((Map) tableStuckCache.get(keClassItemsId)).put(field_code, itemMap);
     }
+
+    @Override
+    public boolean deleteTable(Element element) {
+        boolean res = false;
+        if (isEndOrg(element)) {
+            getOrgItemsId(element);
+            keClass = (KeClass) tableStuckCache.get(keClassStruc);
+            JSONObject paramJson = JSONUtil.createObj();
+            JSONArray andWhere = JSONUtil.createArray().put(JSONUtil.createObj().put("field", keClass.getClass_code().getField_id())
+                    .put("query", JSONUtil.createObj().put("eq", JSONUtil.createArray().put(element.elementText("SUB_SECTION")))))
+                    .put(JSONUtil.createObj().put("field", keClass.getCompany_name().getField_id()).put("query", JSONUtil.createObj()
+                            .put("eq", JSONUtil.createArray().put(companyItemId))))
+                    .put(JSONUtil.createObj().put("field", keClass.getFir_depart().getField_id()).put("query", JSONUtil.createObj()
+                            .put("eq", JSONUtil.createArray().put(firDepartItemId))))
+                    .put(JSONUtil.createObj().put("field", keClass.getSec_depart().getField_id()).put("query", JSONUtil.createObj()
+                            .put("eq", JSONUtil.createArray().put(secDepartItemId))));
+            paramJson.put("where", JSONUtil.createObj().put("and", andWhere));
+            System.out.println(String.format("正在删除课节点：{0}",element.elementText("SUB_SECTION")));
+            res = deleteJsonObject(paramJson, HbTablesId.sub_secdepart);
+        }
+        return res;
+    }
+
 
     @Override
     public String getCacheItemId(Element element) {
@@ -49,7 +89,7 @@ public class KeClassImpl extends BaseHuoBanServ implements IHuoBanService {
     }
 
     @Override
-    public Map<String, Object> getItemId(JSONObject paramJson, Element element) {
+    public Map<String, Object> getLocalItemId(JSONObject paramJson, Element element) {
         Object itemId = ((Map<String, Object>) tableStuckCache.get(keClassItemsId)).get(paramJson.get("field_value"));
         Map<String, Object> itemFieldAndCnName = (Map<String, Object>) itemId;
 //        String result;
@@ -64,7 +104,7 @@ public class KeClassImpl extends BaseHuoBanServ implements IHuoBanService {
 //            } catch (Exception e) {
 //                XxlJobLogger.log(e.getMessage());
 //            }
-//            result = getItemsId(paramJson, this, element);
+//            result = getItemsIdFromRemote(paramJson, this, element);
 //        } else {
 //            result = itemFieldAndCnName.get(keClassItemsId).toString();
 //        }

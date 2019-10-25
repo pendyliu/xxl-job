@@ -7,6 +7,7 @@ import cn.hutool.json.JSONUtil;
 import com.xxl.job.executor.Models.Fir_Depart;
 import com.xxl.job.executor.Models.HbTablesId;
 import com.xxl.job.executor.Models.KeyValueModel;
+import com.xxl.job.executor.Models.Sec_Depart;
 import org.dom4j.Element;
 
 import java.util.HashMap;
@@ -19,7 +20,7 @@ public class FirDepartMentImpl extends BaseHuoBanServ implements IHuoBanService 
 
     Fir_Depart fir_depart = new Fir_Depart();
     public static String firDpartItemsId = "firDpartItemsId";
-
+    String companyItemId;
     @Override
     public void createFieldsIdMap() {
         if (tableStuckCache.get("fir_depart") == null) {
@@ -42,7 +43,7 @@ public class FirDepartMentImpl extends BaseHuoBanServ implements IHuoBanService 
     }
 
     @Override
-    public Map<String, Object> getItemId(JSONObject paramJson, Element element) {
+    public Map<String, Object> getLocalItemId(JSONObject paramJson, Element element) {
         Object itemId = ((Map<String, Object>) tableStuckCache.get(firDpartItemsId)).get(paramJson.get("field_value"));
         Map<String, Object> itemFieldAndCnName = (Map<String, Object>) itemId;
 //        String result;
@@ -56,13 +57,21 @@ public class FirDepartMentImpl extends BaseHuoBanServ implements IHuoBanService 
 //            } catch (Exception e) {
 //                XxlJobLogger.log(e.getMessage());
 //            }
-//            result = getItemsId(paramJson, this, element);
+//            result = getItemsIdFromRemote(paramJson, this, element);
 //        } else {
 //            result = itemFieldAndCnName.get("itemId").toString();
 //        }
         return itemFieldAndCnName;
     }
-
+    /**
+     * 获取所有父节点的ItemsID
+     *
+     * @param element
+     */
+    public void getOrgItemsId(Element element) {
+        companyItemId = ((Map) ((Map) (tableStuckCache.get(CompanyImpl.companyItemsId))).
+                get(element.elementText("BRANCH"))).get("itemId").toString();
+    }
     @Override
     public List readStringXml(String xml) {
         return null;
@@ -87,6 +96,25 @@ public class FirDepartMentImpl extends BaseHuoBanServ implements IHuoBanService 
         //将以组织编码为Key，Map对象为Value的键值存放到缓存中
         ((Map) tableStuckCache.get(firDpartItemsId)).put(field_code, itemMap);
     }
+
+    @Override
+    public boolean deleteTable(Element element) {
+        boolean res = false;
+        if (isEndOrg(element)) {
+            getOrgItemsId(element);
+            fir_depart = (Fir_Depart) tableStuckCache.get("fir_depart");
+            JSONObject paramJson = JSONUtil.createObj();
+            JSONArray andWhere = JSONUtil.createArray().put(JSONUtil.createObj().put("field", fir_depart.getDepart_code().getField_id())
+                    .put("query", JSONUtil.createObj().put("eq", JSONUtil.createArray().put(element.elementText("DEPARTMENT")))))
+                    .put(JSONUtil.createObj().put("field", fir_depart.getCompany_name().getField_id()).put("query", JSONUtil.createObj()
+                            .put("eq", JSONUtil.createArray().put(companyItemId))));
+            paramJson.put("where", JSONUtil.createObj().put("and", andWhere));
+            System.out.println(String.format("正在删除一级部门节点：{0}",element.elementText("DEPARTMENT")));
+           res = deleteJsonObject(paramJson, HbTablesId.depment);
+        }
+        return res;
+    }
+
 
     @Override
     public JSONObject updateTable(JSONObject jsonObject, Element element) {

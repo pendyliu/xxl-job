@@ -6,6 +6,7 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.xxl.job.core.log.XxlJobLogger;
 import com.xxl.job.executor.Models.HbTablesId;
+import com.xxl.job.executor.Models.KeClass;
 import com.xxl.job.executor.Models.KeyValueModel;
 import com.xxl.job.executor.Models.Sec_Depart;
 import org.dom4j.Element;
@@ -19,6 +20,8 @@ import static com.xxl.job.executor.service.jobhandler.PersonHbJobHandler.tableSt
 public class Sec_DepartImpl extends BaseHuoBanServ implements IHuoBanService {
     Sec_Depart sec_depart = new Sec_Depart();
     public static String secDepartItemsId = "secDepartItemsId";
+    String companyItemId;
+    String firDepartItemId;
 
     @Override
     public void createFieldsIdMap() {
@@ -42,8 +45,21 @@ public class Sec_DepartImpl extends BaseHuoBanServ implements IHuoBanService {
         return sectionItemId;
     }
 
+
+    /**
+     * 获取所有父节点的ItemsID
+     *
+     * @param element
+     */
+    public void getOrgItemsId(Element element) {
+        companyItemId = ((Map) ((Map) (tableStuckCache.get(CompanyImpl.companyItemsId))).
+                get(element.elementText("BRANCH"))).get("itemId").toString();
+        firDepartItemId = ((Map) ((Map) (tableStuckCache.get(FirDepartMentImpl.firDpartItemsId))).
+                get(getOrgNodeName(element, "DEPARTMENT"))).get("itemId").toString();
+    }
+
     @Override
-    public Map<String, Object> getItemId(JSONObject paramJson, Element element) {
+    public Map<String, Object> getLocalItemId(JSONObject paramJson, Element element) {
         Object itemId = ((Map<String, Object>) tableStuckCache.get(secDepartItemsId)).get(paramJson.get("field_value"));
         Map<String, Object> itemFieldAndCnName = (Map<String, Object>) itemId;
 //        String result;
@@ -57,7 +73,7 @@ public class Sec_DepartImpl extends BaseHuoBanServ implements IHuoBanService {
 //            } catch (Exception e) {
 //                XxlJobLogger.log(e.getMessage());
 //            }
-//            result = getItemsId(paramJson, this, element);
+//            result = getItemsIdFromRemote(paramJson, this, element);
 //        } else {
 //            result = itemFieldAndCnName.get("itemId").toString();
 //        }
@@ -90,6 +106,26 @@ public class Sec_DepartImpl extends BaseHuoBanServ implements IHuoBanService {
     public void saveItemsId(Map itemMap, String field_code) {
         //将以组织编码为Key，Map对象为Value的键值存放到缓存中
         ((Map) tableStuckCache.get(secDepartItemsId)).put(field_code, itemMap);
+    }
+
+    @Override
+    public boolean deleteTable(Element element) {
+        boolean res = false;
+        if (isEndOrg(element)) {
+            getOrgItemsId(element);
+            sec_depart = (Sec_Depart) tableStuckCache.get("sec_depart");
+            JSONObject paramJson = JSONUtil.createObj();
+            JSONArray andWhere = JSONUtil.createArray().put(JSONUtil.createObj().put("field", sec_depart.getSec_depart().getField_id())
+                    .put("query", JSONUtil.createObj().put("eq", JSONUtil.createArray().put(element.elementText("SECTION")))))
+                    .put(JSONUtil.createObj().put("field", sec_depart.getCompany_name().getField_id()).put("query", JSONUtil.createObj()
+                            .put("eq", JSONUtil.createArray().put(companyItemId))))
+                    .put(JSONUtil.createObj().put("field", sec_depart.getFir_depart().getField_id()).put("query", JSONUtil.createObj()
+                            .put("eq", JSONUtil.createArray().put(firDepartItemId))));
+            paramJson.put("where", JSONUtil.createObj().put("and", andWhere));
+            System.out.println(String.format("正在删除二级部门节点：{0}",element.elementText("SECTION")));
+            res= deleteJsonObject(paramJson, HbTablesId.sec_depart);
+        }
+        return res;
     }
 
     @Override

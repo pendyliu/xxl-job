@@ -45,7 +45,7 @@ public class PostNameImpl extends BaseHuoBanServ implements IHuoBanService {
     }
 
     @Override
-    public Map getItemId(JSONObject paramJson, Element element) {
+    public Map getLocalItemId(JSONObject paramJson, Element element) {
         return null;
     }
 
@@ -58,10 +58,13 @@ public class PostNameImpl extends BaseHuoBanServ implements IHuoBanService {
     public JSONObject insertTable(Element element) {
         String tableId = HbTablesId.post_name;
         PostName postName = (PostName) tableStuckCache.get(postNameStruc);
-        JSONObject paramJson = JSONUtil.createObj().put("fields", JSONUtil.createObj().
-                put(postName.getPostCode().getField_id(), element.elementText("POSITION"))
-                .put(postName.getPostName().getField_id(), element.elementText("JOB_TITLE")));
-        JSONObject reuslt = insertTable(paramJson, tableId);
+        JSONObject reuslt=null;
+        if ("".equals( StrUtil.nullToDefault(element.elementText("POSITION"),""))){
+            JSONObject paramJson = JSONUtil.createObj().put("fields", JSONUtil.createObj().
+                    put(postName.getPostCode().getField_id(), element.elementText("POSITION"))
+                    .put(postName.getPostName().getField_id(), element.elementText("JOB_TITLE")));
+            reuslt = insertTable(paramJson, tableId);
+        }
         return reuslt;
     }
 
@@ -87,6 +90,11 @@ public class PostNameImpl extends BaseHuoBanServ implements IHuoBanService {
     public void saveItemsId(Map itemMap, String field_code) {
         //将以组织编码为Key，Map对象为Value的键值存放到缓存中
         ((Map) tableStuckCache.get(postNameItems)).put(field_code, itemMap);
+    }
+
+    @Override
+    public boolean deleteTable(Element element) {
+        return false;
     }
 
     /**

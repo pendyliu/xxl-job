@@ -46,7 +46,7 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
     }
 
     @Override
-    public Map getItemId(JSONObject paramJson, Element element) {
+    public Map getLocalItemId(JSONObject paramJson, Element element) {
         return null;
     }
 
@@ -117,8 +117,8 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
         String groupCode = new GroupImpl().getCacheItemId(element);
         String teamCode = new TeamNameImpl().getCacheItemId(element);
         String postItemId = new PostNameImpl().getCacheItemId(element);
-        int sex = element.elementText("SEX") == "W" ? 2 : 1;
-        int status = element.elementText("STATUS") == "T" ? 2 : 1;
+        int sex ="W".equals(element.elementText("SEX"))  ? 2 : 1;
+        int status = "T".equals(element.elementText("STATUS")) ? 2 : 1;
         int isLeader = Convert.toInt(StrUtil.blankToDefault(element.elementText("isLeader"), "2"));
         String memberUserId="";
         if (Convert.toInt(StrUtil.emptyToDefault(element.elementText("isLeader"), "0")) > 0) {
@@ -170,8 +170,8 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
             String groupCode = new GroupImpl().getCacheItemId(element);
             String teamCode = new TeamNameImpl().getCacheItemId(element);
             String postItemId = new PostNameImpl().getCacheItemId(element);
-            int status = element.elementText("STATUS") == "T" ? 2 : 1;
-            int sex = element.elementText("SEX") == "W" ? 2 : 1;
+            int status = "T".equals(element.elementText("STATUS")) ? 2 : 1;
+            int sex = element.elementText("SEX").equals("W") ? 2 : 1;
             int isLeader = Convert.toInt(StrUtil.blankToDefault(element.elementText("isLeader"), "2"));
             String memberUserId="";
             if (Convert.toInt(StrUtil.emptyToDefault(element.elementText("isLeader"), "0")) > 0) {
@@ -225,6 +225,12 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
 
     }
 
+    @Override
+    public boolean deleteTable(Element element) {
+        return false;
+    }
+
+
     public JSONObject getLeaderNoHbaccount() {
         staffInfo = (Staff_Info) tableStuckCache.get(staffInfoTbStruc);
         JSONObject paramJson = JSONUtil.createObj();
@@ -233,7 +239,7 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
                 .put(JSONUtil.createObj().put("field", staffInfo.getStaff_member().getField_id()).put("query", JSONUtil.createObj()
                         .put("em", true)));
         paramJson.put("where", JSONUtil.createObj().put("and", andWhere));
-        JSONObject result = getJsonObject(paramJson, HbTablesId.staff_info);
+        JSONObject result = getJsonObject(paramJson, HbTablesId.staff_info,"find");
         return result;
     }
 

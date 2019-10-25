@@ -40,7 +40,7 @@ public class CompanyImpl extends BaseHuoBanServ implements IHuoBanService<Compan
     }
 
     @Override
-    public Map<String, Object> getItemId(JSONObject paramJson, Element element) {
+    public Map<String, Object> getLocalItemId(JSONObject paramJson, Element element) {
         Object itemId = ((Map<String, Object>) tableStuckCache.get(companyItemsId)).get(paramJson.get("field_value"));
         Map<String, Object> itemFieldAndCnName = (Map<String, Object>) itemId;
         return itemFieldAndCnName;
@@ -79,6 +79,12 @@ public class CompanyImpl extends BaseHuoBanServ implements IHuoBanService<Compan
         //将以组织编码为Key，Map对象为Value的键值存放到缓存中
         ((Map) tableStuckCache.get(companyItemsId)).put(field_code, itemMap);
     }
+
+    @Override
+    public boolean deleteTable(Element element) {
+        return false;
+    }
+
 
     @Override
     public JSONObject updateTable(JSONObject jsonObject, Element element) {
