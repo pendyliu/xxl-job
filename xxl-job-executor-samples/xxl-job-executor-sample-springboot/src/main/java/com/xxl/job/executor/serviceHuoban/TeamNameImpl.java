@@ -68,31 +68,44 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
             getOrgItemsId(element);
             team_name = (Team_Name) tableStuckCache.get("team_name");
             JSONObject paramJson = JSONUtil.createObj();
-            JSONArray andWhere = JSONUtil.createArray().put(JSONUtil.createObj().put("field", team_name.getTeam_Code().getField_id())
-                    .put("query", JSONUtil.createObj().put("eq", JSONUtil.createArray().put(element.elementText("RANK")))))
-                    .put(JSONUtil.createObj().put("field", team_name.getCompany_Name().getField_id()).put("query", JSONUtil.createObj()
-                            .put("eq", JSONUtil.createArray().put(companyItemId))))
-                    .put(JSONUtil.createObj().put("field", team_name.getFir_Depart().getField_id()).put("query", JSONUtil.createObj()
-                            .put("eq", JSONUtil.createArray().put(firDepartItemId))))
-                    .put(JSONUtil.createObj().put("field", team_name.getSec_Depart().getField_id()).put("query", JSONUtil.createObj()
-                            .put("eq", JSONUtil.createArray().put(secDepartItemId))))
-                    .put(JSONUtil.createObj().put("field", team_name.getT_Class().getField_id()).put("query", JSONUtil.createObj()
-                            .put("eq", JSONUtil.createArray().put(subSectionItemId))))
-                    .put(JSONUtil.createObj().put("field", team_name.getGroup().getField_id()).put("query", JSONUtil.createObj()
-                            .put("eq", JSONUtil.createArray().put(groupItemId))));
+            JSONArray andWhere = getWhereAndJson(element);
             paramJson.put("where", JSONUtil.createObj().put("and", andWhere));
-            System.out.println(String.format("正在删除班组节点：{0}",element.elementText("RANK")));
-            res= deleteJsonObject(paramJson, HbTablesId.team_name);
+            System.out.println(String.format("正在删除班组节点：{0}", element.elementText("RANK")));
+            res = deleteJsonObject(paramJson, HbTablesId.team_name);
         }
         return res;
     }
 
+    private JSONArray getWhereAndJson(Element element) {
+        return JSONUtil.createArray().put(JSONUtil.createObj().put("field", team_name.getTeam_Code().getField_id())
+                .put("query", JSONUtil.createObj().put("eq", JSONUtil.createArray().put(element.elementText("RANK")))))
+                .put(JSONUtil.createObj().put("field", team_name.getCompany_Name().getField_id()).put("query", JSONUtil.createObj()
+                        .put("eq", JSONUtil.createArray().put(Long.valueOf(companyItemId)))))
+                .put(JSONUtil.createObj().put("field", team_name.getFir_Depart().getField_id()).put("query", JSONUtil.createObj()
+                        .put("eq", JSONUtil.createArray().put(Long.valueOf(firDepartItemId)))))
+                .put(JSONUtil.createObj().put("field", team_name.getSec_Depart().getField_id()).put("query", JSONUtil.createObj()
+                        .put("eq", JSONUtil.createArray().put(Long.valueOf(secDepartItemId)))))
+                .put(JSONUtil.createObj().put("field", team_name.getT_Class().getField_id()).put("query", JSONUtil.createObj()
+                        .put("eq", JSONUtil.createArray().put(Long.valueOf(subSectionItemId)))))
+                .put(JSONUtil.createObj().put("field", team_name.getGroup().getField_id()).put("query", JSONUtil.createObj()
+                        .put("eq", JSONUtil.createArray().put(Long.valueOf(groupItemId)))));
+    }
+
     @Override
     public String getCacheItemId(Element element) {
-        String teamItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.team_name)
+        getOrgItemsId(element);
+        JSONObject paramJson = JSONUtil.createObj().put("tableId", HbTablesId.team_name)
                 .put("field_id", ((Team_Name) tableStuckCache.get("team_name")).getTeam_Code().getField_id())
                 .put("field_value", getOrgNodeName(element, "RANK"))
-                .put("fieldCnName", getOrgNodeName(element, "RANK_DESCRIPTION")), this, element, false);
+                .put("fieldCnName", getOrgNodeName(element, "RANK_DESCRIPTION"));
+        Map<String, Object> itemFieldAndCnName = getLocalItemId(paramJson, element);
+        JSONArray andWhere = getWhereAndJson(element);
+        String teamItemId = getRemoteItem(element, paramJson, itemFieldAndCnName, andWhere,this,false);
+
+//        String teamItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.team_name)
+//                .put("field_id", ((Team_Name) tableStuckCache.get("team_name")).getTeam_Code().getField_id())
+//                .put("field_value", getOrgNodeName(element, "RANK"))
+//                .put("fieldCnName", getOrgNodeName(element, "RANK_DESCRIPTION")), this, element, false);
         return teamItemId;
     }
 
@@ -124,16 +137,16 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
                     }
                     if (!"".equals(StrUtil.nullToDefault(element.elementText("INVALID_DATE"), ""))) {
                         boolean rankIsEndOrg = deleteTable(TeamNameImpl.class, element);
-                        if (Convert.toInt(element.elementText("CITY_END"))==1){
+                        if (Convert.toInt(element.elementText("CITY_END")) == 1) {
                             boolean groupIsEndOrg = deleteTable(GroupImpl.class, element);
                         }
-                        if (Convert.toInt(element.elementText("SUB_SECTION_END"))==1){
+                        if (Convert.toInt(element.elementText("SUB_SECTION_END")) == 1) {
                             boolean keClassIsEndOrg = deleteTable(KeClassImpl.class, element);
                         }
-                        if (Convert.toInt(element.elementText("SECTION_END"))==1){
+                        if (Convert.toInt(element.elementText("SECTION_END")) == 1) {
                             boolean secDepIsEndOrg = deleteTable(Sec_DepartImpl.class, element);
                         }
-                        if (Convert.toInt(element.elementText("SECTION_END"))==1){
+                        if (Convert.toInt(element.elementText("SECTION_END")) == 1) {
                             boolean firDepIsEndOrg = deleteTable(FirDepartMentImpl.class, element);
                         }
 
@@ -202,9 +215,9 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
                 .put(team_name.getT_Class().getField_id(), JSONUtil.createArray().put(subSectionItemId))
                 .put(team_name.getGroup().getField_id(), JSONUtil.createArray().put(groupItemId));
         //如果本节点是最后一个组织节点，更新本组织负责人员
-        if (isEndOrg(element) && !StrUtil.isBlank(element.elementText("Function_Leader"))) {
-            dataJson.put(team_name.getLeaders().getField_id(), JSONUtil.createArray().put(leaderItemId));
-        }
+//        if (isEndOrg(element) && !StrUtil.isBlank(element.elementText("Function_Leader"))) {
+//            dataJson.put(team_name.getLeaders().getField_id(), JSONUtil.createArray().put(leaderItemId));
+//        }
         JSONObject paramJson = JSONUtil.createObj().put("item_ids", itemId).put("filter", JSONUtil.createObj().put("and",
                 JSONUtil.createArray().put(JSONUtil.createObj().put("field", team_name.getTeam_Code().getField_id())
                         .put("query", JSONUtil.createObj().put("eq", jsonObject.getStr("field_code"))))))

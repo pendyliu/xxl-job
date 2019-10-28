@@ -21,6 +21,24 @@ import static com.xxl.job.executor.service.jobhandler.PersonHbJobHandler.tableSt
 import static com.xxl.job.executor.serviceHuoban.StaffInfoImpl.staffInfoTbStruc;
 
 public abstract class BaseHuoBanServ<T> {
+
+    public String getRemoteItem(Element element, JSONObject paramJson, Map<String, Object> itemFieldAndCnName, JSONArray andWhere, IHuoBanService iHuoBanService,boolean isSuper) {
+        String teamItemId = "";
+        if (itemFieldAndCnName == null || !itemFieldAndCnName.get("fieldCnName").equals(paramJson.get("fieldCnName"))) {
+            try {
+                paramJson.put("where", JSONUtil.createObj().put("and", andWhere)).remove("field_id");
+                //当伙伴接口获取组织的中文名称与本地缓存的中文名称不一致时重新去接口中伙伴接口中获取
+                teamItemId = getItemsIdFromRemote(paramJson, iHuoBanService, element, isSuper);
+            } catch (Exception e) {
+                XxlJobLogger.log(e.getMessage());
+            }
+        } else {
+            teamItemId = itemFieldAndCnName.get("itemId").toString();
+        }
+        return teamItemId;
+    }
+
+
     /**
      * 从伙伴接口数据内容表中获取itemsId     *
      *
@@ -31,20 +49,19 @@ public abstract class BaseHuoBanServ<T> {
         String tableId = paramJson.getStr("tableId");
         String field_code = paramJson.getStr("field_value");
         String fieldCnName = paramJson.getStr("fieldCnName");
-        try {
-            JSONArray andWhere = JSONArray.class.newInstance().put(JSONUtil.createObj().put("field", paramJson.get("field_id"))
-                    .put("query", JSONUtil.createObj().put("eq", paramJson.get("field_value"))));
-            paramJson.put("where", JSONUtil.createObj().put("and", andWhere)).remove("field_id");
-        } catch (Exception e) {
-            XxlJobLogger.log(e.getMessage());
-        }
+//        try {
+//            JSONArray andWhere = JSONArray.class.newInstance().put(JSONUtil.createObj().put("field", paramJson.get("field_id"))
+//                    .put("query", JSONUtil.createObj().put("eq", paramJson.get("field_value"))));
+//            paramJson.put("where", JSONUtil.createObj().put("and", andWhere)).remove("field_id");
+//        } catch (Exception e) {
+//            XxlJobLogger.log(e.getMessage());
+//        }
         //移除掉接口不需要的参数
         paramJson.remove("query");
         paramJson.remove("tableId");
         paramJson.remove("field_value");
         paramJson.remove("fieldCnName");
         JSONObject result = getJsonObject(paramJson, tableId, "find");
-
 
         //定义一个存放itemId和中文名的Map对象
         Map<String, String> itemMap = new HashMap<>();
@@ -55,7 +72,7 @@ public abstract class BaseHuoBanServ<T> {
             if (itemId.length() > 0) {
                 JSONObject updateResult = iHuoBanService.updateTable(result.put("fieldCnName", fieldCnName).put("field_code", field_code), element);
                 cnName = updateResult.getStr("fieldCnName");
-                //如果中文名称不一样的话就去更新伙伴系统数据
+                //去更新伙伴系统数据
                 if (updateResult.get("rspStatus") != null && ((Integer) updateResult.get("rspStatus")) != 200) {
                     XxlJobLogger.log(element.elementText("BRANCH") + "组织更新失败！");
                 }
@@ -244,9 +261,9 @@ public abstract class BaseHuoBanServ<T> {
             case "DEPARTMENT":
                 res = "A9999".equals(element.elementText("DEPARTMENT")) ? element.elementText("BRANCH") + "b1" : element.elementText("DEPARTMENT");
                 break;
-            case "DEPARTMENT_DESCRIPT":
-                res = "/".equals(StrUtil.nullToDefault(element.elementText("DEPARTMENT_DESCRIPT"), "/")) || "".equals(StrUtil.nullToDefault(element.elementText("DEPARTMENT_DESCRIPT"), "")) ?
-                        element.elementText("BRANCH_DESCRIPTION") : element.elementText("DEPARTMENT_DESCRIPT");
+            case "DEPARTMENT_DESCRIPTION":
+                res = "/".equals(StrUtil.nullToDefault(element.elementText("DEPARTMENT_DESCRIPTION"), "/")) || "".equals(StrUtil.nullToDefault(element.elementText("DEPARTMENT_DESCRIPTION"), "")) ?
+                        element.elementText("BRANCH_DESCRIPTION") : element.elementText("DEPARTMENT_DESCRIPTION");
                 break;
             case "SECTION":
                 res = "A9999".equals(element.elementText("SECTION")) || "".equals(element.elementText("SECTION"))
@@ -255,8 +272,8 @@ public abstract class BaseHuoBanServ<T> {
                 break;
             case "SECTION_DESCRIPTION":
                 res = "/".equals(StrUtil.nullToDefault(element.elementText("SECTION_DESCRIPTION"), "/")) || "".equals(StrUtil.nullToDefault(element.elementText("SECTION_DESCRIPTION"), "")) ?
-                        "/".equals(StrUtil.nullToDefault(element.elementText("DEPARTMENT_DESCRIPT"), "/")) || "".equals(StrUtil.nullToDefault(element.elementText("DEPARTMENT_DESCRIPT"), "")) ?
-                                element.elementText("BRANCH_DESCRIPTION") : element.elementText("DEPARTMENT_DESCRIPT") :
+                        "/".equals(StrUtil.nullToDefault(element.elementText("DEPARTMENT_DESCRIPTION"), "/")) || "".equals(StrUtil.nullToDefault(element.elementText("DEPARTMENT_DESCRIPT"), "")) ?
+                                element.elementText("BRANCH_DESCRIPTION") : element.elementText("DEPARTMENT_DESCRIPTION") :
                         element.elementText("SECTION_DESCRIPTION");
                 break;
             case "SUB_SECTION":
@@ -269,8 +286,8 @@ public abstract class BaseHuoBanServ<T> {
             case "SUB_DESCRIPTION":
                 res = "/".equals(StrUtil.nullToDefault(element.elementText("SUB_DESCRIPTION"), "/")) || "".equals(StrUtil.nullToDefault(element.elementText("SUB_DESCRIPTION"), "")) ?
                         "/".equals(StrUtil.nullToDefault(element.elementText("SECTION_DESCRIPTION"), "/")) || "".equals(StrUtil.nullToDefault(element.elementText("SECTION_DESCRIPTION"), ""))
-                                ? "/".equals(StrUtil.nullToDefault(element.elementText("DEPARTMENT_DESCRIPT"), "/")) || "".equals(StrUtil.nullToDefault(element.elementText("DEPARTMENT_DESCRIPT"), ""))
-                                ? element.elementText("BRANCH_DESCRIPTION") : element.elementText("DEPARTMENT_DESCRIPT") :
+                                ? "/".equals(StrUtil.nullToDefault(element.elementText("DEPARTMENT_DESCRIPTION"), "/")) || "".equals(StrUtil.nullToDefault(element.elementText("DEPARTMENT_DESCRIPT"), ""))
+                                ? element.elementText("BRANCH_DESCRIPTION") : element.elementText("DEPARTMENT_DESCRIPTION") :
                                 element.elementText("SECTION_DESCRIPTION") : element.elementText("SUB_DESCRIPTION");
                 break;
             case "CITY":
@@ -285,8 +302,8 @@ public abstract class BaseHuoBanServ<T> {
                 res = "/".equals(StrUtil.nullToDefault(element.elementText("CITY_DESCRIPTION"), "/")) || "".equals(StrUtil.nullToDefault(element.elementText("CITY_DESCRIPTION"), "")) ?
                         "/".equals(StrUtil.nullToDefault(element.elementText("SUB_DESCRIPTION"), "/")) || "".equals(StrUtil.nullToDefault(element.elementText("SUB_DESCRIPTION"), "")) ?
                                 "/".equals(StrUtil.nullToDefault(element.elementText("SECTION_DESCRIPTION"), "/")) || "".equals(StrUtil.nullToDefault(element.elementText("SECTION_DESCRIPTION"), ""))
-                                        ? "/".equals(StrUtil.nullToDefault(element.elementText("DEPARTMENT_DESCRIPT"), "/")) || "".equals(StrUtil.nullToDefault(element.elementText("DEPARTMENT_DESCRIPT"), "")) ?
-                                        element.elementText("BRANCH_DESCRIPTION") : element.elementText("DEPARTMENT_DESCRIPT") :
+                                        ? "/".equals(StrUtil.nullToDefault(element.elementText("DEPARTMENT_DESCRIPTION"), "/")) || "".equals(StrUtil.nullToDefault(element.elementText("DEPARTMENT_DESCRIPT"), "")) ?
+                                        element.elementText("BRANCH_DESCRIPTION") : element.elementText("DEPARTMENT_DESCRIPTION") :
                                         element.elementText("SECTION_DESCRIPTION") : element.elementText("SUB_DESCRIPTION") :
                         element.elementText("CITY_DESCRIPTION");
                 break;
@@ -304,8 +321,8 @@ public abstract class BaseHuoBanServ<T> {
                         "/".equals(StrUtil.nullToDefault(element.elementText("CITY_DESCRIPTION"), "/")) || "".equals(StrUtil.nullToDefault(element.elementText("CITY_DESCRIPTION"), "")) ?
                                 "/".equals(StrUtil.nullToDefault(element.elementText("SUB_DESCRIPTION"), "/")) || "".equals(StrUtil.nullToDefault(element.elementText("SUB_DESCRIPTION"), "")) ?
                                         "/".equals(StrUtil.nullToDefault(element.elementText("SECTION_DESCRIPTION"), "/")) || "".equals(StrUtil.nullToDefault(element.elementText("SECTION_DESCRIPTION"), "")) ?
-                                                "/".equals(StrUtil.nullToDefault(element.elementText("DEPARTMENT_DESCRIPT"), "/")) || "".equals(StrUtil.nullToDefault(element.elementText("DEPARTMENT_DESCRIPT"), "")) ?
-                                                        element.elementText("BRANCH_DESCRIPTION") : element.elementText("DEPARTMENT_DESCRIPT") :
+                                                "/".equals(StrUtil.nullToDefault(element.elementText("DEPARTMENT_DESCRIPTION"), "/")) || "".equals(StrUtil.nullToDefault(element.elementText("DEPARTMENT_DESCRIPT"), "")) ?
+                                                        element.elementText("BRANCH_DESCRIPTION") : element.elementText("DEPARTMENT_DESCRIPTION") :
                                                 element.elementText("SECTION_DESCRIPTION") : element.elementText("SUB_DESCRIPTION") :
                                 element.elementText("CITY_DESCRIPTION") : element.elementText("RANK_DESCRIPTION");
                 break;

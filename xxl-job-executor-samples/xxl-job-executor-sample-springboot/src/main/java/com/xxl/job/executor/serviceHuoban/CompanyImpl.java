@@ -48,11 +48,14 @@ public class CompanyImpl extends BaseHuoBanServ implements IHuoBanService<Compan
 
     @Override
     public String getCacheItemId(Element element) {
-        String companyItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.comany).
+        JSONObject paramJson = JSONUtil.createObj().put("tableId", HbTablesId.comany).
                 put("field_id", ((Company) tableStuckCache.get("company")).getCompany_code().getField_id()).
                 put("field_value", element.elementText("BRANCH"))
-                .put("fieldCnName", element.elementTextTrim("BRANCH_DESCRIPTION")),
-                this, element,false);
+                .put("fieldCnName", element.elementTextTrim("BRANCH_DESCRIPTION"));
+        Map<String, Object> itemFieldAndCnName = getLocalItemId(paramJson, element);
+        JSONArray andWhere = JSONUtil.createArray().put(JSONUtil.createObj().put("field", paramJson.get("field_id"))
+                .put("query", JSONUtil.createObj().put("eq", paramJson.get("field_value"))));
+        String companyItemId = getRemoteItem(element, paramJson, itemFieldAndCnName, andWhere, this, false);
         return companyItemId;
     }
 

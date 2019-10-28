@@ -52,7 +52,33 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
 
     @Override
     public String getCacheItemId(Element element) {
-        return null;
+        JSONObject paramJson = JSONUtil.createObj().put("tableId", HbTablesId.staff_info)
+                .put("field_id", ((Staff_Info) tableStuckCache.get(staffInfoTbStruc)).getStaff_number().getField_id())
+                .put("field_value", element.elementText("STAFF_NO"));
+        Map<String, Object> itemFieldAndCnName = getLocalItemId(paramJson, element);
+        JSONArray andWhere = JSONUtil.createArray().put(JSONUtil.createObj().put("field", paramJson.get("field_id"))
+                .put("query", JSONUtil.createObj().put("eq", paramJson.get("field_value"))));
+        String staffInfoItemId = getRemoteItem(element, paramJson, itemFieldAndCnName, andWhere, this, false);
+        return staffInfoItemId;
+    }
+
+    /**
+     * 获取上长的ItemId
+     *
+     * @param element
+     * @return
+     */
+    private String getSuperiorItemId(Element element) {
+        JSONObject paramJson = JSONUtil.createObj().put("tableId", HbTablesId.staff_info)
+                .put("field_id", ((Staff_Info) tableStuckCache.get(staffInfoTbStruc)).getStaff_number().getField_id())
+                .put("field_value", element.elementText("SUPERVISOR_NAME"));
+        Map<String, Object> itemFieldAndCnName = getLocalItemId(paramJson, element);
+        JSONArray andWhere = JSONUtil.createArray().put(JSONUtil.createObj().put("field", paramJson.get("field_id"))
+                .put("query", JSONUtil.createObj().put("eq", paramJson.get("field_value"))));
+
+        String staffInfoItemId = getRemoteItem(element, paramJson, itemFieldAndCnName, andWhere, this, true);
+        return staffInfoItemId;
+
     }
 
     @Override
@@ -64,7 +90,7 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
             // 获取根节点
             Element rootElt = doc.getRootElement();
             // 拿到根节点的名称
-            System.out.println("人员信息更新开始......." );
+            System.out.println("人员信息更新开始.......");
             // 获取根节点下的子节点STAFF
             Iterator iter = rootElt.elementIterator("STAFF");
             // 遍历STAFF节点
@@ -86,13 +112,9 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
                     }
 
                     //获取这个人的上长的ItemId
-                    superiorItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.staff_info)
-                            .put("field_id", ((Staff_Info) tableStuckCache.get(staffInfoTbStruc)).getStaff_number().getField_id())
-                            .put("field_value", element.elementText("SUPERVISOR_NAME")), this, element, true);
+                    superiorItemId = getSuperiorItemId(element);
 
-                    String staffInfoItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.staff_info)
-                            .put("field_id", ((Staff_Info) tableStuckCache.get(staffInfoTbStruc)).getStaff_number().getField_id())
-                            .put("field_value", element.elementText("STAFF_NO")), this, element, false);
+                    String staffInfoItemId = getCacheItemId(element);
                     XxlJobLogger.log("工号：" + element.elementText("STAFF_NO") + "  ItemId：" + staffInfoItemId + "更新成功！");
                 }
             }
@@ -103,7 +125,7 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
         } finally {
 
         }
-        System.out.println("更新完成！");
+        System.out.println("人员更新完成！");
         return null;
     }
 
@@ -117,13 +139,13 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
         String groupCode = new GroupImpl().getCacheItemId(element);
         String teamCode = new TeamNameImpl().getCacheItemId(element);
         String postItemId = new PostNameImpl().getCacheItemId(element);
-        int sex ="W".equals(element.elementText("SEX"))  ? 2 : 1;
+        int sex = "W".equals(element.elementText("SEX")) ? 2 : 1;
         int status = "T".equals(element.elementText("STATUS")) ? 2 : 1;
         int isLeader = Convert.toInt(StrUtil.blankToDefault(element.elementText("isLeader"), "2"));
-        String memberUserId="";
+        String memberUserId = "";
         if (Convert.toInt(StrUtil.emptyToDefault(element.elementText("isLeader"), "0")) > 0) {
             //判断这个人是否有伙伴帐号存在
-            memberUserId= getMemberId(element.elementText("MOBILE_PHONE"));
+            memberUserId = getMemberId(element.elementText("MOBILE_PHONE"));
         }
         String TERMINATION_DATE = element.elementText("TERMINATION_DATE") != null && !(element.elementText("TERMINATION_DATE").equals("")) ? new SimpleDateFormat("yyyy-MM-dd").
                 format(DateUtil.parse(element.elementText("TERMINATION_DATE").substring(0, 10).replace(" ", "/").replace("//", "/"), "MM/dd/yyyy")) : "";
@@ -151,8 +173,8 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
         if (!"".equals(superiorItemId)) {
             dataJson.put(staffInfo.getSuperior().getField_id(), JSONUtil.createArray().put(superiorItemId));
         }
-        if (!"".equals(memberUserId)){
-            dataJson.put(staffInfo.getStaff_member().getField_id(),JSONUtil.createArray().put(memberUserId));
+        if (!"".equals(memberUserId)) {
+            dataJson.put(staffInfo.getStaff_member().getField_id(), JSONUtil.createArray().put(memberUserId));
         }
         JSONObject result = insertTable(dataJson, HbTablesId.staff_info);
         return result;
@@ -173,10 +195,10 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
             int status = "T".equals(element.elementText("STATUS")) ? 2 : 1;
             int sex = element.elementText("SEX").equals("W") ? 2 : 1;
             int isLeader = Convert.toInt(StrUtil.blankToDefault(element.elementText("isLeader"), "2"));
-            String memberUserId="";
+            String memberUserId = "";
             if (Convert.toInt(StrUtil.emptyToDefault(element.elementText("isLeader"), "0")) > 0) {
                 //判断这个人是否有伙伴帐号存在
-                memberUserId= getMemberId(element.elementText("MOBILE_PHONE"));
+                memberUserId = getMemberId(element.elementText("MOBILE_PHONE"));
             }
             String cnName = StrUtil.split(((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("title").toString(), "")[0];
             String fieldCnName = jsonObject.getStr("fieldCnName") == null ? element.elementText("STAFF_NAME") : jsonObject.getStr("fieldCnName");
@@ -205,8 +227,8 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
             if (!"".equals(superiorItemId)) {
                 dataJson.put(staffInfo.getSuperior().getField_id(), JSONUtil.createArray().put(superiorItemId));
             }
-            if (!"".equals(memberUserId)){
-                dataJson.put(staffInfo.getStaff_member().getField_id(),JSONUtil.createArray().put(memberUserId));
+            if (!"".equals(memberUserId)) {
+                dataJson.put(staffInfo.getStaff_member().getField_id(), JSONUtil.createArray().put(memberUserId));
             }
             JSONObject paramJson = JSONUtil.createObj().put("item_ids", itemId).put("filter", JSONUtil.createObj().put("and",
                     JSONUtil.createArray().put(JSONUtil.createObj().put("field", staffInfo.getStaff_number().getField_id())
@@ -239,7 +261,7 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
                 .put(JSONUtil.createObj().put("field", staffInfo.getStaff_member().getField_id()).put("query", JSONUtil.createObj()
                         .put("em", true)));
         paramJson.put("where", JSONUtil.createObj().put("and", andWhere));
-        JSONObject result = getJsonObject(paramJson, HbTablesId.staff_info,"find");
+        JSONObject result = getJsonObject(paramJson, HbTablesId.staff_info, "find");
         return result;
     }
 

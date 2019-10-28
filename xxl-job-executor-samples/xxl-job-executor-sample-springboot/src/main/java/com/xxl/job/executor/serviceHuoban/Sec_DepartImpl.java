@@ -6,7 +6,6 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.xxl.job.core.log.XxlJobLogger;
 import com.xxl.job.executor.Models.HbTablesId;
-import com.xxl.job.executor.Models.KeClass;
 import com.xxl.job.executor.Models.KeyValueModel;
 import com.xxl.job.executor.Models.Sec_Depart;
 import org.dom4j.Element;
@@ -37,11 +36,15 @@ public class Sec_DepartImpl extends BaseHuoBanServ implements IHuoBanService {
 
     @Override
     public String getCacheItemId(Element element) {
-        String sectionItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.sec_depart)
-                        .put("field_id", ((Sec_Depart) tableStuckCache.get("sec_depart")).getDepart_code().getField_id())
-                        .put("field_value", getOrgNodeName(element, "SECTION"))
-                        .put("fieldCnName", getOrgNodeName(element, "SECTION_DESCRIPTION")),
-                this, element, false);
+        getOrgItemsId(element);
+        sec_depart = (Sec_Depart) tableStuckCache.get("sec_depart");
+        JSONObject paramJson=JSONUtil.createObj().put("tableId", HbTablesId.sec_depart)
+                .put("field_id", ((Sec_Depart) tableStuckCache.get("sec_depart")).getDepart_code().getField_id())
+                .put("field_value", getOrgNodeName(element, "SECTION"))
+                .put("fieldCnName", getOrgNodeName(element, "SECTION_DESCRIPTION"));
+        Map<String, Object> itemFieldAndCnName = getLocalItemId(paramJson, element);
+        JSONArray andWhere = getWhereAndJson(element);
+        String sectionItemId = getRemoteItem(element, paramJson, itemFieldAndCnName, andWhere,this,false);
         return sectionItemId;
     }
 
@@ -115,17 +118,21 @@ public class Sec_DepartImpl extends BaseHuoBanServ implements IHuoBanService {
             getOrgItemsId(element);
             sec_depart = (Sec_Depart) tableStuckCache.get("sec_depart");
             JSONObject paramJson = JSONUtil.createObj();
-            JSONArray andWhere = JSONUtil.createArray().put(JSONUtil.createObj().put("field", sec_depart.getSec_depart().getField_id())
-                    .put("query", JSONUtil.createObj().put("eq", JSONUtil.createArray().put(element.elementText("SECTION")))))
-                    .put(JSONUtil.createObj().put("field", sec_depart.getCompany_name().getField_id()).put("query", JSONUtil.createObj()
-                            .put("eq", JSONUtil.createArray().put(companyItemId))))
-                    .put(JSONUtil.createObj().put("field", sec_depart.getFir_depart().getField_id()).put("query", JSONUtil.createObj()
-                            .put("eq", JSONUtil.createArray().put(firDepartItemId))));
+            JSONArray andWhere = getWhereAndJson(element);
             paramJson.put("where", JSONUtil.createObj().put("and", andWhere));
             System.out.println(String.format("正在删除二级部门节点：{0}",element.elementText("SECTION")));
             res= deleteJsonObject(paramJson, HbTablesId.sec_depart);
         }
         return res;
+    }
+
+    private JSONArray getWhereAndJson(Element element) {
+        return JSONUtil.createArray().put(JSONUtil.createObj().put("field", sec_depart.getSec_depart().getField_id())
+                        .put("query", JSONUtil.createObj().put("eq", JSONUtil.createArray().put(element.elementText("SECTION")))))
+                        .put(JSONUtil.createObj().put("field", sec_depart.getCompany_name().getField_id()).put("query", JSONUtil.createObj()
+                                .put("eq", JSONUtil.createArray().put(Long.valueOf(companyItemId)))))
+                        .put(JSONUtil.createObj().put("field", sec_depart.getFir_depart().getField_id()).put("query", JSONUtil.createObj()
+                                .put("eq", JSONUtil.createArray().put(Long.valueOf(firDepartItemId)))));
     }
 
     @Override
@@ -145,10 +152,10 @@ public class Sec_DepartImpl extends BaseHuoBanServ implements IHuoBanService {
                     .put(sec_depart.getCompany_name().getField_id(),JSONUtil.createArray().put(companyItemId))
                     .put(sec_depart.getFir_depart().getField_id(),JSONUtil.createArray().put(firDepartItemId));
             //如果本节点是最后一个组织节点，更新本组织负责人员
-            if (isEndOrg(element) && !StrUtil.isBlank(element.elementText("Function_Leader"))) {
-                String leaderItemId = getLeaderItemId(element);
-                dataJson.put(sec_depart.getLeaders().getField_id(), JSONUtil.createArray().put(leaderItemId));
-            }
+//            if (isEndOrg(element) && !StrUtil.isBlank(element.elementText("Function_Leader"))) {
+//                String leaderItemId = getLeaderItemId(element);
+//                dataJson.put(sec_depart.getLeaders().getField_id(), JSONUtil.createArray().put(leaderItemId));
+//            }
             JSONObject paramJson = JSONUtil.createObj().put("item_ids", itemId).put("filter", JSONUtil.createObj().put("and",
                     JSONUtil.createArray().put(JSONUtil.createObj().put("field", sec_depart.getDepart_code().getField_id())
                             .put("query", JSONUtil.createObj().put("eq", jsonObject.getStr("field_code"))))))

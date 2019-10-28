@@ -38,21 +38,25 @@ public class GroupImpl extends BaseHuoBanServ implements IHuoBanService {
             getOrgItemsId(element);
             group = (Group) tableStuckCache.get(groupStruc);
             JSONObject paramJson = JSONUtil.createObj();
-            JSONArray andWhere = JSONUtil.createArray().put(JSONUtil.createObj().put("field", group.getGroup_code().getField_id())
-                    .put("query", JSONUtil.createObj().put("eq", JSONUtil.createArray().put(element.elementText("CITY")))))
-                    .put(JSONUtil.createObj().put("field", group.getCompany_name().getField_id()).put("query", JSONUtil.createObj()
-                            .put("eq", JSONUtil.createArray().put(companyItemId))));
-//                    .put(JSONUtil.createObj().put("field", group.getFir_depart().getField_id()).put("query", JSONUtil.createObj()
-//                            .put("eq", JSONUtil.createArray().put(firDepartItemId))))
-//                    .put(JSONUtil.createObj().put("field", group.getSec_depart().getField_id()).put("query", JSONUtil.createObj()
-//                            .put("eq", JSONUtil.createArray().put(secDepartItemId))))
-//                    .put(JSONUtil.createObj().put("field", group.getKe_class().getField_id()).put("query", JSONUtil.createObj()
-//                            .put("eq", JSONUtil.createArray().put(subSectionItemId))));
+            JSONArray andWhere = getWhereAndJson(element);
             paramJson.put("where", JSONUtil.createObj().put("and", andWhere));
             System.out.println(String.format("正在删除公司%s下班节点：%s",element.elementText("BRANCH"),element.elementText("CITY")));
            res= deleteJsonObject(paramJson, HbTablesId.group);
         }
         return res;
+    }
+
+    private JSONArray getWhereAndJson(Element element) {
+        return JSONUtil.createArray().put(JSONUtil.createObj().put("field", group.getGroup_code().getField_id())
+                        .put("query", JSONUtil.createObj().put("eq", JSONUtil.createArray().put(element.elementText("CITY")))))
+                        .put(JSONUtil.createObj().put("field", group.getCompany_name().getField_id()).put("query", JSONUtil.createObj()
+                                .put("eq", JSONUtil.createArray().put(Long.valueOf(companyItemId)))))
+                        .put(JSONUtil.createObj().put("field", group.getFir_depart().getField_id()).put("query", JSONUtil.createObj()
+                                .put("eq", JSONUtil.createArray().put(Long.valueOf(firDepartItemId)))))
+                        .put(JSONUtil.createObj().put("field", group.getSec_depart().getField_id()).put("query", JSONUtil.createObj()
+                                .put("eq", JSONUtil.createArray().put(Long.valueOf(secDepartItemId)))))
+                        .put(JSONUtil.createObj().put("field", group.getKe_class().getField_id()).put("query", JSONUtil.createObj()
+                                .put("eq", JSONUtil.createArray().put(Long.valueOf(subSectionItemId)))));
     }
 
     /**
@@ -97,11 +101,15 @@ public class GroupImpl extends BaseHuoBanServ implements IHuoBanService {
 
     @Override
     public String getCacheItemId(Element element) {
-        String cityItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.group)
-                        .put("field_id", ((Group) tableStuckCache.get(groupStruc)).getGroup_code().getField_id())
-                        .put("field_value", getOrgNodeName(element, "CITY"))
-                        .put("fieldCnName", getOrgNodeName(element, "CITY_DESCRIPTION")),
-                this, element, false);
+        getOrgItemsId(element);
+        group = (Group) tableStuckCache.get(groupStruc);
+        JSONObject paramJson=JSONUtil.createObj().put("tableId", HbTablesId.group)
+                .put("field_id", ((Group) tableStuckCache.get(groupStruc)).getGroup_code().getField_id())
+                .put("field_value", getOrgNodeName(element, "CITY"))
+                .put("fieldCnName", getOrgNodeName(element, "CITY_DESCRIPTION"));
+        Map<String, Object> itemFieldAndCnName = getLocalItemId(paramJson, element);
+        JSONArray andWhere = getWhereAndJson(element);
+        String cityItemId  = getRemoteItem(element, paramJson, itemFieldAndCnName, andWhere,this,false);
         return cityItemId;
     }
 
@@ -151,10 +159,10 @@ public class GroupImpl extends BaseHuoBanServ implements IHuoBanService {
                 .put(group.getSec_depart().getField_id(), JSONUtil.createArray().put(secDepartItemId))
                 .put(group.getKe_class().getField_id(), JSONUtil.createArray().put(subSectionItemId));
         //如果本节点是最后一个组织节点，更新本组织负责人员
-        if (isEndOrg(element) && !StrUtil.isBlank(element.elementText("Function_Leader"))) {
-            String leaderItemId = getLeaderItemId(element);
-            dataJson.put(group.getLeaders().getField_id(), JSONUtil.createArray().put(leaderItemId));
-        }
+//        if (isEndOrg(element) && !StrUtil.isBlank(element.elementText("Function_Leader"))) {
+//            String leaderItemId = getLeaderItemId(element);
+//            dataJson.put(group.getLeaders().getField_id(), JSONUtil.createArray().put(leaderItemId));
+//        }
         JSONObject paramJson = JSONUtil.createObj().put("item_ids", itemId).put("filter", JSONUtil.createObj().put("and",
                 JSONUtil.createArray().put(JSONUtil.createObj().put("field", group.getGroup_code().getField_id())
                         .put("query", JSONUtil.createObj().put("eq", jsonObject.getStr("field_code"))))))

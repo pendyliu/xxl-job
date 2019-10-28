@@ -7,7 +7,6 @@ import cn.hutool.json.JSONUtil;
 import com.xxl.job.executor.Models.Fir_Depart;
 import com.xxl.job.executor.Models.HbTablesId;
 import com.xxl.job.executor.Models.KeyValueModel;
-import com.xxl.job.executor.Models.Sec_Depart;
 import org.dom4j.Element;
 
 import java.util.HashMap;
@@ -21,6 +20,7 @@ public class FirDepartMentImpl extends BaseHuoBanServ implements IHuoBanService 
     Fir_Depart fir_depart = new Fir_Depart();
     public static String firDpartItemsId = "firDpartItemsId";
     String companyItemId;
+
     @Override
     public void createFieldsIdMap() {
         if (tableStuckCache.get("fir_depart") == null) {
@@ -35,10 +35,15 @@ public class FirDepartMentImpl extends BaseHuoBanServ implements IHuoBanService 
 
     @Override
     public String getCacheItemId(Element element) {
-        String firDepartMentItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.depment)
+        getOrgItemsId(element);
+        fir_depart = (Fir_Depart) tableStuckCache.get("fir_depart");
+        JSONObject paramJson = JSONUtil.createObj().put("tableId", HbTablesId.depment)
                 .put("field_id", ((Fir_Depart) tableStuckCache.get("fir_depart")).getDepart_code().getField_id())
                 .put("field_value", getOrgNodeName(element, "DEPARTMENT"))
-                .put("fieldCnName", getOrgNodeName(element, "DEPARTMENT_DESCRIPT")), this, element, false);
+                .put("fieldCnName", getOrgNodeName(element, "DEPARTMENT_DESCRIPTION"));
+        Map<String, Object> itemFieldAndCnName = getLocalItemId(paramJson, element);
+        JSONArray andWhere = getWhereAndJson(element);
+        String firDepartMentItemId = getRemoteItem(element, paramJson, itemFieldAndCnName, andWhere, this, false);
         return firDepartMentItemId;
     }
 
@@ -52,7 +57,7 @@ public class FirDepartMentImpl extends BaseHuoBanServ implements IHuoBanService 
 //                JSONArray andWhere = JSONArray.class.newInstance().put(JSONUtil.createObj().put("field", paramJson.get("field_id"))
 //                        .put("query", JSONUtil.createObj().put("eq", paramJson.get("field_value"))))
 //                        .put(JSONUtil.createObj().put("field", fir_depart.getFir_depart().getField_id())
-//                                .put("query", JSONUtil.createObj().put("eq", getOrgNodeName(element, "DEPARTMENT_DESCRIPT"))));
+//                                .put("query", JSONUtil.createObj().put("eq", getOrgNodeName(element, "DEPARTMENT_DESCRIPTION"))));
 //                paramJson.put("where", JSONUtil.createObj().put("and", andWhere)).remove("field_id");
 //            } catch (Exception e) {
 //                XxlJobLogger.log(e.getMessage());
@@ -63,6 +68,7 @@ public class FirDepartMentImpl extends BaseHuoBanServ implements IHuoBanService 
 //        }
         return itemFieldAndCnName;
     }
+
     /**
      * 获取所有父节点的ItemsID
      *
@@ -72,6 +78,7 @@ public class FirDepartMentImpl extends BaseHuoBanServ implements IHuoBanService 
         companyItemId = ((Map) ((Map) (tableStuckCache.get(CompanyImpl.companyItemsId))).
                 get(element.elementText("BRANCH"))).get("itemId").toString();
     }
+
     @Override
     public List readStringXml(String xml) {
         return null;
@@ -85,7 +92,7 @@ public class FirDepartMentImpl extends BaseHuoBanServ implements IHuoBanService 
                 put(fir_depart.getCompany_name().getField_id(),
                         JSONUtil.createArray().put(((Map) ((Map) (tableStuckCache.get(CompanyImpl.companyItemsId))).get(element.elementText("BRANCH"))).get("itemId")))
                 .put(fir_depart.getDepart_code().getField_id(), getOrgNodeName(element, "DEPARTMENT"))
-                .put(fir_depart.getFir_depart().getField_id(), getOrgNodeName(element, "DEPARTMENT_DESCRIPT"))
+                .put(fir_depart.getFir_depart().getField_id(), getOrgNodeName(element, "DEPARTMENT_DESCRIPTION"))
                 .put(fir_depart.getLeaders().getField_id(), element.elementText("")));
         JSONObject reuslt = insertTable(paramJson, tableId);
         return reuslt;
@@ -104,15 +111,19 @@ public class FirDepartMentImpl extends BaseHuoBanServ implements IHuoBanService 
             getOrgItemsId(element);
             fir_depart = (Fir_Depart) tableStuckCache.get("fir_depart");
             JSONObject paramJson = JSONUtil.createObj();
-            JSONArray andWhere = JSONUtil.createArray().put(JSONUtil.createObj().put("field", fir_depart.getDepart_code().getField_id())
-                    .put("query", JSONUtil.createObj().put("eq", JSONUtil.createArray().put(element.elementText("DEPARTMENT")))))
-                    .put(JSONUtil.createObj().put("field", fir_depart.getCompany_name().getField_id()).put("query", JSONUtil.createObj()
-                            .put("eq", JSONUtil.createArray().put(companyItemId))));
+            JSONArray andWhere = getWhereAndJson(element);
             paramJson.put("where", JSONUtil.createObj().put("and", andWhere));
-            System.out.println(String.format("正在删除一级部门节点：{0}",element.elementText("DEPARTMENT")));
-           res = deleteJsonObject(paramJson, HbTablesId.depment);
+            System.out.println(String.format("正在删除一级部门节点：{0}", element.elementText("DEPARTMENT")));
+            res = deleteJsonObject(paramJson, HbTablesId.depment);
         }
         return res;
+    }
+
+    private JSONArray getWhereAndJson(Element element) {
+        return JSONUtil.createArray().put(JSONUtil.createObj().put("field", fir_depart.getDepart_code().getField_id())
+                .put("query", JSONUtil.createObj().put("eq", JSONUtil.createArray().put(element.elementText("DEPARTMENT")))))
+                .put(JSONUtil.createObj().put("field", fir_depart.getCompany_name().getField_id()).put("query", JSONUtil.createObj()
+                        .put("eq", JSONUtil.createArray().put(Long.valueOf(companyItemId)))));
     }
 
 
@@ -122,20 +133,20 @@ public class FirDepartMentImpl extends BaseHuoBanServ implements IHuoBanService 
         String companyItemId = ((Map) ((Map) (tableStuckCache.get(CompanyImpl.companyItemsId))).
                 get(element.elementText("BRANCH"))).get("itemId").toString();
         fir_depart = (Fir_Depart) tableStuckCache.get("fir_depart");
-        String fieldCnName = getOrgNodeName(element, "DEPARTMENT_DESCRIPT");
+        String fieldCnName = getOrgNodeName(element, "DEPARTMENT_DESCRIPTION");
         resultJson.put("fieldCnName", fieldCnName);
-        JSONObject dataJson=JSONUtil.createObj().put(fir_depart.getFir_depart().getField_id(), fieldCnName)
-                .put(fir_depart.getCompany_name().getField_id(),JSONUtil.createArray().put(companyItemId));
+        JSONObject dataJson = JSONUtil.createObj().put(fir_depart.getFir_depart().getField_id(), fieldCnName)
+                .put(fir_depart.getCompany_name().getField_id(), JSONUtil.createArray().put(companyItemId));
         String itemId = ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("item_id").toString();
         //如果本节点是最后一个组织节点，更新本组织负责人员
-        if (isEndOrg(element) && !StrUtil.isBlank(element.elementText("Function_Leader"))) {
-            String leaderItemId = getLeaderItemId(element);
-            dataJson.put(fir_depart.getLeaders().getField_id(), JSONUtil.createArray().put(leaderItemId));
-        }
+//        if (isEndOrg(element) && !StrUtil.isBlank(element.elementText("Function_Leader"))) {
+//            String leaderItemId = getLeaderItemId(element);
+//            dataJson.put(fir_depart.getLeaders().getField_id(), JSONUtil.createArray().put(leaderItemId));
+//        }
         JSONObject paramJson = JSONUtil.createObj().put("item_ids", itemId).put("filter", JSONUtil.createObj().put("and",
                 JSONUtil.createArray().put(JSONUtil.createObj().put("field", fir_depart.getDepart_code().getField_id())
                         .put("query", JSONUtil.createObj().put("eq", jsonObject.getStr("field_code"))))))
-                .put("data",dataJson);
+                .put("data", dataJson);
         resultJson.put("rspStatus", updateTable(HbTablesId.depment, paramJson));
 
         return resultJson;

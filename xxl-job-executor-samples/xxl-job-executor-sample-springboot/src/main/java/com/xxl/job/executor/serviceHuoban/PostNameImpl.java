@@ -4,7 +4,9 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.xxl.job.executor.Models.*;
+import com.xxl.job.executor.Models.HbTablesId;
+import com.xxl.job.executor.Models.KeyValueModel;
+import com.xxl.job.executor.Models.PostName;
 import org.dom4j.Element;
 
 import java.util.HashMap;
@@ -15,17 +17,20 @@ import static com.xxl.job.executor.service.jobhandler.PersonHbJobHandler.tableSt
 
 public class PostNameImpl extends BaseHuoBanServ implements IHuoBanService {
 
-    public static String postNameStruc="postNameStruc";
-    public static String postNameItems="postNameItems";
-    PostName postName=new PostName();
+    public static String postNameStruc = "postNameStruc";
+    public static String postNameItems = "postNameItems";
+    PostName postName = new PostName();
 
     @Override
     public String getCacheItemId(Element element) {
-
-        String postItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.post_name).
+        JSONObject paramJson = JSONUtil.createObj().put("tableId", HbTablesId.post_name).
                 put("field_id", ((PostName) tableStuckCache.get(PostNameImpl.postNameStruc)).getPostCode().getField_id()).
                 put("field_value", element.elementText("POSITION"))
-                .put("fieldCnName", element.elementTextTrim("JOB_TITLE")), this, element,false);
+                .put("fieldCnName", element.elementTextTrim("JOB_TITLE"));
+        Map<String, Object> itemFieldAndCnName = getLocalItemId(paramJson, element);
+        JSONArray andWhere = JSONUtil.createArray().put(JSONUtil.createObj().put("field", paramJson.get("field_id"))
+                .put("query", JSONUtil.createObj().put("eq", paramJson.get("field_value"))));
+        String postItemId = getRemoteItem(element, paramJson, itemFieldAndCnName, andWhere, this, false);
         return postItemId;
     }
 
@@ -58,8 +63,8 @@ public class PostNameImpl extends BaseHuoBanServ implements IHuoBanService {
     public JSONObject insertTable(Element element) {
         String tableId = HbTablesId.post_name;
         PostName postName = (PostName) tableStuckCache.get(postNameStruc);
-        JSONObject reuslt=null;
-        if ("".equals( StrUtil.nullToDefault(element.elementText("POSITION"),""))){
+        JSONObject reuslt = null;
+        if ("".equals(StrUtil.nullToDefault(element.elementText("POSITION"), ""))) {
             JSONObject paramJson = JSONUtil.createObj().put("fields", JSONUtil.createObj().
                     put(postName.getPostCode().getField_id(), element.elementText("POSITION"))
                     .put(postName.getPostName().getField_id(), element.elementText("JOB_TITLE")));
@@ -81,7 +86,7 @@ public class PostNameImpl extends BaseHuoBanServ implements IHuoBanService {
                     JSONUtil.createArray().put(JSONUtil.createObj().put("field", postName.getPostCode().getField_id())
                             .put("query", JSONUtil.createObj().put("eq", element.elementText("POSITION"))))))
                     .put("data", JSONUtil.createObj().put(postName.getPostName().getField_id(), element.elementText("JOB_TITLE")));
-            resultJson.put("rspStatus", updateTable(HbTablesId.comany, paramJson));
+            resultJson.put("rspStatus", updateTable(HbTablesId.post_name, paramJson));
         }
         return resultJson;
     }
@@ -99,6 +104,7 @@ public class PostNameImpl extends BaseHuoBanServ implements IHuoBanService {
 
     /**
      * 获取岗位信息表字段映射
+     *
      * @param jsonObject
      * @param postName
      */
