@@ -51,10 +51,11 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
     }
 
     @Override
-    public String getCacheItemId(Element element) {
+    public String getCacheItemId(Element element, Boolean isDetele) {
         JSONObject paramJson = JSONUtil.createObj().put("tableId", HbTablesId.staff_info)
                 .put("field_id", ((Staff_Info) tableStuckCache.get(staffInfoTbStruc)).getStaff_number().getField_id())
-                .put("field_value", element.elementText("STAFF_NO"));
+                .put("field_value", element.elementText("STAFF_NO"))
+                .put("isDelete", isDetele);
         Map<String, Object> itemFieldAndCnName = getLocalItemId(paramJson, element);
         JSONArray andWhere = JSONUtil.createArray().put(JSONUtil.createObj().put("field", paramJson.get("field_id"))
                 .put("query", JSONUtil.createObj().put("eq", paramJson.get("field_value"))));
@@ -114,7 +115,7 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
                     //获取这个人的上长的ItemId
                     superiorItemId = getSuperiorItemId(element);
 
-                    String staffInfoItemId = getCacheItemId(element);
+                    String staffInfoItemId = getCacheItemId(element, false);
                     XxlJobLogger.log("工号：" + element.elementText("STAFF_NO") + "  ItemId：" + staffInfoItemId + "更新成功！");
                 }
             }
@@ -132,13 +133,13 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
     @Override
     public JSONObject insertTable(Element element) {
         staffInfo = (Staff_Info) tableStuckCache.get(staffInfoTbStruc);
-        String companyItemId = new CompanyImpl().getCacheItemId(element);
-        String firDepartItemId = new FirDepartMentImpl().getCacheItemId(element);
-        String sec_depart_code = new Sec_DepartImpl().getCacheItemId(element);
-        String subSectionCode = new KeClassImpl().getCacheItemId(element);
-        String groupCode = new GroupImpl().getCacheItemId(element);
-        String teamCode = new TeamNameImpl().getCacheItemId(element);
-        String postItemId = new PostNameImpl().getCacheItemId(element);
+        String companyItemId = new CompanyImpl().getCacheItemId(element, false);
+        String firDepartItemId = new FirDepartMentImpl().getCacheItemId(element, false);
+        String sec_depart_code = new Sec_DepartImpl().getCacheItemId(element, false);
+        String subSectionCode = new KeClassImpl().getCacheItemId(element, false);
+        String groupCode = new GroupImpl().getCacheItemId(element, false);
+        String teamCode = new TeamNameImpl().getCacheItemId(element, false);
+        String postItemId = new PostNameImpl().getCacheItemId(element, false);
         int sex = "W".equals(element.elementText("SEX")) ? 2 : 1;
         int status = "T".equals(element.elementText("STATUS")) ? 2 : 1;
         int isLeader = Convert.toInt(StrUtil.blankToDefault(element.elementText("isLeader"), "2"));
@@ -182,16 +183,15 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
 
     @Override
     public JSONObject updateTable(JSONObject jsonObject, Element element) {
-        JSONObject resultJson = null;
+        JSONObject resultJson = JSONUtil.createObj();
         try {
-            resultJson = JSONUtil.createObj();
-            String companyItemId = new CompanyImpl().getCacheItemId(element);
-            String firDepartItemId = new FirDepartMentImpl().getCacheItemId(element);
-            String sec_depart_code = new Sec_DepartImpl().getCacheItemId(element);
-            String subSectionCode = new KeClassImpl().getCacheItemId(element);
-            String groupCode = new GroupImpl().getCacheItemId(element);
-            String teamCode = new TeamNameImpl().getCacheItemId(element);
-            String postItemId = new PostNameImpl().getCacheItemId(element);
+            String companyItemId = new CompanyImpl().getCacheItemId(element, false);
+            String firDepartItemId = new FirDepartMentImpl().getCacheItemId(element, false);
+            String sec_depart_code = new Sec_DepartImpl().getCacheItemId(element, false);
+            String subSectionCode = new KeClassImpl().getCacheItemId(element, false);
+            String groupCode = new GroupImpl().getCacheItemId(element, false);
+            String teamCode = new TeamNameImpl().getCacheItemId(element, false);
+            String postItemId = new PostNameImpl().getCacheItemId(element, false);
             int status = "T".equals(element.elementText("STATUS")) ? 2 : 1;
             int sex = element.elementText("SEX").equals("W") ? 2 : 1;
             int isLeader = Convert.toInt(StrUtil.blankToDefault(element.elementText("isLeader"), "2"));
@@ -234,6 +234,7 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
                     JSONUtil.createArray().put(JSONUtil.createObj().put("field", staffInfo.getStaff_number().getField_id())
                             .put("query", JSONUtil.createObj().put("eq", element.elementText("STAFF_NO"))))))
                     .put("data", dataJson);
+//            resultJson.put("fieldCnName",element.elementText("STAFF_NAME"));
             resultJson.put("rspStatus", updateTable(HbTablesId.staff_info, paramJson));
         } catch (Exception e) {
             e.printStackTrace();

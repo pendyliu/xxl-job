@@ -1,6 +1,7 @@
 package com.xxl.job.executor.serviceHuoban;
 
 import cn.hutool.core.text.UnicodeUtil;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.Header;
 import cn.hutool.http.HttpRequest;
@@ -22,9 +23,9 @@ import static com.xxl.job.executor.serviceHuoban.StaffInfoImpl.staffInfoTbStruc;
 
 public abstract class BaseHuoBanServ<T> {
 
-    public String getRemoteItem(Element element, JSONObject paramJson, Map<String, Object> itemFieldAndCnName, JSONArray andWhere, IHuoBanService iHuoBanService,boolean isSuper) {
+    public String getRemoteItem(Element element, JSONObject paramJson, Map<String, Object> itemFieldAndCnName, JSONArray andWhere, IHuoBanService iHuoBanService, boolean isSuper) {
         String teamItemId = "";
-        if (itemFieldAndCnName == null || !itemFieldAndCnName.get("fieldCnName").equals(paramJson.get("fieldCnName"))) {
+        if (itemFieldAndCnName == null || !ObjectUtil.defaultIfNull(itemFieldAndCnName.get("fieldCnName"), "").equals(paramJson.get("fieldCnName"))) {
             try {
                 paramJson.put("where", JSONUtil.createObj().put("and", andWhere)).remove("field_id");
                 //当伙伴接口获取组织的中文名称与本地缓存的中文名称不一致时重新去接口中伙伴接口中获取
@@ -49,6 +50,7 @@ public abstract class BaseHuoBanServ<T> {
         String tableId = paramJson.getStr("tableId");
         String field_code = paramJson.getStr("field_value");
         String fieldCnName = paramJson.getStr("fieldCnName");
+        boolean isDelete = paramJson.getBool("isDelete") == null ? false : paramJson.getBool("isDelete");
 //        try {
 //            JSONArray andWhere = JSONArray.class.newInstance().put(JSONUtil.createObj().put("field", paramJson.get("field_id"))
 //                    .put("query", JSONUtil.createObj().put("eq", paramJson.get("field_value"))));
@@ -61,6 +63,7 @@ public abstract class BaseHuoBanServ<T> {
         paramJson.remove("tableId");
         paramJson.remove("field_value");
         paramJson.remove("fieldCnName");
+        paramJson.remove("isDelete");
         JSONObject result = getJsonObject(paramJson, tableId, "find");
 
         //定义一个存放itemId和中文名的Map对象
@@ -68,12 +71,13 @@ public abstract class BaseHuoBanServ<T> {
         String itemId = ((JSONArray) result.get("items")).size() > 0 ?
                 ((JSONObject) ((JSONArray) result.get("items")).get(0)).get("item_id").toString() : "";
         String cnName = "";
-        if (!isSuperior) {
+        //当不是获取上长并且不是删除组织节点的时候去更新或新增
+        if (!isSuperior && !isDelete) {
             if (itemId.length() > 0) {
                 JSONObject updateResult = iHuoBanService.updateTable(result.put("fieldCnName", fieldCnName).put("field_code", field_code), element);
                 cnName = updateResult.getStr("fieldCnName");
                 //去更新伙伴系统数据
-                if (updateResult.get("rspStatus") != null && ((Integer) updateResult.get("rspStatus")) != 200) {
+                if (updateResult.get("rspStatus") != null && ((Integer) updateResult.get("rspStatus")) == 500) {
                     XxlJobLogger.log(element.elementText("BRANCH") + "组织更新失败！");
                 }
             } else {
@@ -84,12 +88,14 @@ public abstract class BaseHuoBanServ<T> {
                     cnName = StrUtil.split(result.get("title").toString(), "")[0];
                 }
             }
-            //将中文名称放到Map对象中
-            itemMap.put("fieldCnName", cnName);
-            //将ItemId放到Map对象中
-            itemMap.put("itemId", itemId);
-            //将以组织编码为Key，Map对象为Value的键值存放到缓存中
-            iHuoBanService.saveItemsId(itemMap, field_code);
+            if (cnName != null) {
+                //将中文名称放到Map对象中
+                itemMap.put("fieldCnName", cnName);
+                //将ItemId放到Map对象中
+                itemMap.put("itemId", itemId);
+                //将以组织编码为Key，Map对象为Value的键值存放到缓存中
+                iHuoBanService.saveItemsId(itemMap, field_code);
+            }
         }
         return itemId;
     }

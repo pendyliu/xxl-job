@@ -34,7 +34,7 @@ public interface IHuoBanService<T> {
      * @param element
      * @return
      */
-    String getCacheItemId(Element element);
+    String getCacheItemId(Element element,Boolean isDelete);
 
     /**
      * 从万古接口中读取数据

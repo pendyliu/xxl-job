@@ -47,11 +47,12 @@ public class CompanyImpl extends BaseHuoBanServ implements IHuoBanService<Compan
     }
 
     @Override
-    public String getCacheItemId(Element element) {
+    public String getCacheItemId(Element element, Boolean isDelete) {
         JSONObject paramJson = JSONUtil.createObj().put("tableId", HbTablesId.comany).
                 put("field_id", ((Company) tableStuckCache.get("company")).getCompany_code().getField_id()).
                 put("field_value", element.elementText("BRANCH"))
-                .put("fieldCnName", element.elementTextTrim("BRANCH_DESCRIPTION"));
+                .put("fieldCnName", element.elementTextTrim("BRANCH_DESCRIPTION"))
+                .put("isDelete", isDelete);
         Map<String, Object> itemFieldAndCnName = getLocalItemId(paramJson, element);
         JSONArray andWhere = JSONUtil.createArray().put(JSONUtil.createObj().put("field", paramJson.get("field_id"))
                 .put("query", JSONUtil.createObj().put("eq", paramJson.get("field_value"))));
@@ -85,16 +86,41 @@ public class CompanyImpl extends BaseHuoBanServ implements IHuoBanService<Compan
 
     @Override
     public boolean deleteTable(Element element) {
-        return false;
+        boolean res = false;
+        if (isEndOrg(element)) {
+            company = (Company) tableStuckCache.get("company");
+            JSONObject paramJson = JSONUtil.createObj();
+            JSONArray andWhere = JSONUtil.createArray().put(JSONUtil.createObj().put("field", company.getCompany_code().getField_id())
+                    .put("query", JSONUtil.createObj().put("eq", element.elementText("BRANCH"))));
+            paramJson.put("where", JSONUtil.createObj().put("and", andWhere));
+            paramJson.put("where", JSONUtil.createObj().put("and", andWhere))
+                    .put("isDelete", true);
+            System.out.println(String.format("正在删除一级部门节点：{0}", element.elementText("DEPARTMENT")));
+            res = deleteJsonObject(paramJson, HbTablesId.depment);
+        }
+        return res;
     }
 
+    private boolean isEndOrg(Element element) {
+        boolean cityIsNull = "A9999".equals(element.elementText("CITY")) || "".equals(element.elementText("CITY"));
+        boolean rankIsNull = "A9999".equals(element.elementText("RANK")) || "".equals(element.elementText("RANK"));
+        boolean subsectionIsNull = "A9999".equals(element.elementText("SUB_SECTION")) || "".equals(element.elementText("SUB_SECTION"));
+        boolean secDepartIsNull = ("A9999".equals(element.elementText("SECTION")) || "".equals(element.elementText("SECTION")));
+        boolean firDepartIsNotNull = "A9999".equals(element.elementText("DEPARTMENT")) || "".equals(element.elementText("DEPARTMENT"));
+        boolean companyIsNotNull = !("A9999".equals(element.elementText("BRANCH")) || "".equals(element.elementText("BRANCH")));
+        return cityIsNull && rankIsNull && subsectionIsNull && secDepartIsNull && firDepartIsNotNull && companyIsNotNull;
+    }
 
     @Override
     public JSONObject updateTable(JSONObject jsonObject, Element element) {
         JSONObject resultJson = JSONUtil.createObj();
-        String cnName = StrUtil.split(((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("title").toString(), "")[0];
-        String fieldCnName = jsonObject.getStr("fieldCnName") == null ? element.elementText("BRANCH_DESCRIPTION") : jsonObject.getStr("fieldCnName");
+        String fieldCnName=jsonObject.getStr("fieldCnName");
         resultJson.put("fieldCnName", fieldCnName);
+        //如果是获取人员信息的时候来查询组织就不需要去更新组织，直接返回即可
+        if (!StrUtil.isAllBlank(element.elementText("STAFF_NO"))){
+            return resultJson.put("rspStatus",0);
+        }
+        String cnName = StrUtil.split(((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("title").toString(), "")[0];
         if (!cnName.equals(fieldCnName)) {
             Company company = (Company) tableStuckCache.get("company");
             String itemId = ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("item_id").toString();

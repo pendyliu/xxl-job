@@ -35,28 +35,29 @@ public class GroupImpl extends BaseHuoBanServ implements IHuoBanService {
     public boolean deleteTable(Element element) {
         boolean res = false;
         if (isEndOrg(element)) {
-            getOrgItemsId(element);
+            getOrgItemsId(element, true);
             group = (Group) tableStuckCache.get(groupStruc);
             JSONObject paramJson = JSONUtil.createObj();
             JSONArray andWhere = getWhereAndJson(element);
-            paramJson.put("where", JSONUtil.createObj().put("and", andWhere));
-            System.out.println(String.format("正在删除公司%s下班节点：%s",element.elementText("BRANCH"),element.elementText("CITY")));
-           res= deleteJsonObject(paramJson, HbTablesId.group);
+            paramJson.put("where", JSONUtil.createObj().put("and", andWhere))
+                    .put("isDelete", true);
+            System.out.println(String.format("正在删除公司%s下班节点：%s", element.elementText("BRANCH"), element.elementText("CITY")));
+            res = deleteJsonObject(paramJson, HbTablesId.group);
         }
         return res;
     }
 
     private JSONArray getWhereAndJson(Element element) {
         return JSONUtil.createArray().put(JSONUtil.createObj().put("field", group.getGroup_code().getField_id())
-                        .put("query", JSONUtil.createObj().put("eq", JSONUtil.createArray().put(element.elementText("CITY")))))
-                        .put(JSONUtil.createObj().put("field", group.getCompany_name().getField_id()).put("query", JSONUtil.createObj()
-                                .put("eq", JSONUtil.createArray().put(Long.valueOf(companyItemId)))))
-                        .put(JSONUtil.createObj().put("field", group.getFir_depart().getField_id()).put("query", JSONUtil.createObj()
-                                .put("eq", JSONUtil.createArray().put(Long.valueOf(firDepartItemId)))))
-                        .put(JSONUtil.createObj().put("field", group.getSec_depart().getField_id()).put("query", JSONUtil.createObj()
-                                .put("eq", JSONUtil.createArray().put(Long.valueOf(secDepartItemId)))))
-                        .put(JSONUtil.createObj().put("field", group.getKe_class().getField_id()).put("query", JSONUtil.createObj()
-                                .put("eq", JSONUtil.createArray().put(Long.valueOf(subSectionItemId)))));
+                .put("query", JSONUtil.createObj().put("eq", JSONUtil.createArray().put(getOrgNodeName(element,"CITY")))))
+                .put(JSONUtil.createObj().put("field", group.getCompany_name().getField_id()).put("query", JSONUtil.createObj()
+                        .put("eq", JSONUtil.createArray().put(Long.valueOf(companyItemId)))))
+                .put(JSONUtil.createObj().put("field", group.getFir_depart().getField_id()).put("query", JSONUtil.createObj()
+                        .put("eq", JSONUtil.createArray().put(Long.valueOf(firDepartItemId)))))
+                .put(JSONUtil.createObj().put("field", group.getSec_depart().getField_id()).put("query", JSONUtil.createObj()
+                        .put("eq", JSONUtil.createArray().put(Long.valueOf(secDepartItemId)))))
+                .put(JSONUtil.createObj().put("field", group.getKe_class().getField_id()).put("query", JSONUtil.createObj()
+                        .put("eq", JSONUtil.createArray().put(Long.valueOf(subSectionItemId)))));
     }
 
     /**
@@ -64,11 +65,22 @@ public class GroupImpl extends BaseHuoBanServ implements IHuoBanService {
      *
      * @param element
      */
-    public void getOrgItemsId(Element element) {
-        companyItemId = new CompanyImpl().getCacheItemId(element);
-        firDepartItemId = new FirDepartMentImpl().getCacheItemId(element);
-        secDepartItemId = new Sec_DepartImpl().getCacheItemId(element);
-        subSectionItemId = new KeClassImpl().getCacheItemId(element);
+    public void getOrgItemsId(Element element, Boolean isDelete) {
+        if (StrUtil.isAllBlank(element.elementText("STAFF_NO"))){
+            companyItemId = new CompanyImpl().getCacheItemId(element, isDelete);
+            firDepartItemId = new FirDepartMentImpl().getCacheItemId(element, isDelete);
+            secDepartItemId = new Sec_DepartImpl().getCacheItemId(element, isDelete);
+            subSectionItemId = new KeClassImpl().getCacheItemId(element, isDelete);
+        }else{
+            companyItemId = ((Map) ((Map) (tableStuckCache.get(CompanyImpl.companyItemsId))).
+                    get(element.elementText("BRANCH"))).get("itemId").toString();
+            firDepartItemId = ((Map) ((Map) (tableStuckCache.get(FirDepartMentImpl.firDpartItemsId))).
+                    get(getOrgNodeName(element, "DEPARTMENT"))).get("itemId").toString();
+            secDepartItemId = ((Map) ((Map) (tableStuckCache.get(Sec_DepartImpl.secDepartItemsId))).
+                    get(getOrgNodeName(element, "SECTION"))).get("itemId").toString();
+            subSectionItemId=((Map) ((Map) (tableStuckCache.get(KeClassImpl.keClassItemsId))).
+                    get(getOrgNodeName(element, "SUB_SECTION"))).get("itemId").toString();
+        }
     }
 
 
@@ -100,16 +112,17 @@ public class GroupImpl extends BaseHuoBanServ implements IHuoBanService {
     }
 
     @Override
-    public String getCacheItemId(Element element) {
-        getOrgItemsId(element);
+    public String getCacheItemId(Element element, Boolean isDelete) {
+        getOrgItemsId(element, isDelete);
         group = (Group) tableStuckCache.get(groupStruc);
-        JSONObject paramJson=JSONUtil.createObj().put("tableId", HbTablesId.group)
+        JSONObject paramJson = JSONUtil.createObj().put("tableId", HbTablesId.group)
                 .put("field_id", ((Group) tableStuckCache.get(groupStruc)).getGroup_code().getField_id())
                 .put("field_value", getOrgNodeName(element, "CITY"))
-                .put("fieldCnName", getOrgNodeName(element, "CITY_DESCRIPTION"));
+                .put("fieldCnName", getOrgNodeName(element, "CITY_DESCRIPTION"))
+                .put("isDelete", isDelete);
         Map<String, Object> itemFieldAndCnName = getLocalItemId(paramJson, element);
         JSONArray andWhere = getWhereAndJson(element);
-        String cityItemId  = getRemoteItem(element, paramJson, itemFieldAndCnName, andWhere,this,false);
+        String cityItemId = getRemoteItem(element, paramJson, itemFieldAndCnName, andWhere, this, false);
         return cityItemId;
     }
 
@@ -141,17 +154,21 @@ public class GroupImpl extends BaseHuoBanServ implements IHuoBanService {
     @Override
     public JSONObject updateTable(JSONObject jsonObject, Element element) {
         JSONObject resultJson = JSONUtil.createObj();
-        group = (Group) tableStuckCache.get(groupStruc);
-        String companyItemId = ((Map) ((Map) (tableStuckCache.get(CompanyImpl.companyItemsId))).
-                get(element.elementText("BRANCH"))).get("itemId").toString();
-        String secDepartItemId = ((Map) ((Map) (tableStuckCache.get(Sec_DepartImpl.secDepartItemsId))).
-                get(getOrgNodeName(element, "SECTION"))).get("itemId").toString();
-        String firDepartItemId = ((Map) ((Map) (tableStuckCache.get(FirDepartMentImpl.firDpartItemsId))).
-                get(getOrgNodeName(element, "DEPARTMENT"))).get("itemId").toString();
-        String subSectionItemId = ((Map) ((Map) (tableStuckCache.get(KeClassImpl.keClassItemsId))).
-                get(getOrgNodeName(element, "SUB_SECTION"))).get("itemId").toString();
-        String fieldCnName = getOrgNodeName(element, "CITY_DESCRIPTION");
+        String fieldCnName=jsonObject.getStr("fieldCnName");
         resultJson.put("fieldCnName", fieldCnName);
+        //如果是获取人员信息的时候来查询组织就不需要去更新组织，直接返回即可
+        if (!StrUtil.isAllBlank(element.elementText("STAFF_NO"))){
+            return resultJson.put("rspStatus",0);
+        }
+        group = (Group) tableStuckCache.get(groupStruc);
+         companyItemId = ((Map) ((Map) (tableStuckCache.get(CompanyImpl.companyItemsId))).
+                get(element.elementText("BRANCH"))).get("itemId").toString();
+         secDepartItemId = ((Map) ((Map) (tableStuckCache.get(Sec_DepartImpl.secDepartItemsId))).
+                get(getOrgNodeName(element, "SECTION"))).get("itemId").toString();
+         firDepartItemId = ((Map) ((Map) (tableStuckCache.get(FirDepartMentImpl.firDpartItemsId))).
+                get(getOrgNodeName(element, "DEPARTMENT"))).get("itemId").toString();
+         subSectionItemId = ((Map) ((Map) (tableStuckCache.get(KeClassImpl.keClassItemsId))).
+                get(getOrgNodeName(element, "SUB_SECTION"))).get("itemId").toString();
         String itemId = ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("item_id").toString();
         JSONObject dataJson = JSONUtil.createObj().put(group.getGroup_name().getField_id(), fieldCnName)
                 .put(group.getCompany_name().getField_id(), JSONUtil.createArray().put(companyItemId))

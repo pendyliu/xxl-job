@@ -64,21 +64,23 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
     @Override
     public boolean deleteTable(Element element) {
         boolean res = false;
-        if (isEndOrg(element)) {
-            getOrgItemsId(element);
+        boolean parentOrgIsNotNull = getOrgItemsId(element, true);
+        if (parentOrgIsNotNull) {
             team_name = (Team_Name) tableStuckCache.get("team_name");
             JSONObject paramJson = JSONUtil.createObj();
             JSONArray andWhere = getWhereAndJson(element);
-            paramJson.put("where", JSONUtil.createObj().put("and", andWhere));
-            System.out.println(String.format("正在删除班组节点：{0}", element.elementText("RANK")));
+            paramJson.put("where", JSONUtil.createObj().put("and", andWhere))
+                    .put("isDelete", true);
             res = deleteJsonObject(paramJson, HbTablesId.team_name);
         }
+        System.out.println(String.format("正在删除班组节点：%s %b", element.elementText("RANK"), res));
+
         return res;
     }
 
     private JSONArray getWhereAndJson(Element element) {
         return JSONUtil.createArray().put(JSONUtil.createObj().put("field", team_name.getTeam_Code().getField_id())
-                .put("query", JSONUtil.createObj().put("eq", JSONUtil.createArray().put(element.elementText("RANK")))))
+                .put("query", JSONUtil.createObj().put("eq", JSONUtil.createArray().put(getOrgNodeName(element, "RANK")))))
                 .put(JSONUtil.createObj().put("field", team_name.getCompany_Name().getField_id()).put("query", JSONUtil.createObj()
                         .put("eq", JSONUtil.createArray().put(Long.valueOf(companyItemId)))))
                 .put(JSONUtil.createObj().put("field", team_name.getFir_Depart().getField_id()).put("query", JSONUtil.createObj()
@@ -92,15 +94,16 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
     }
 
     @Override
-    public String getCacheItemId(Element element) {
-        getOrgItemsId(element);
+    public String getCacheItemId(Element element, Boolean isDelete) {
+        getOrgItemsId(element, isDelete);
         JSONObject paramJson = JSONUtil.createObj().put("tableId", HbTablesId.team_name)
                 .put("field_id", ((Team_Name) tableStuckCache.get("team_name")).getTeam_Code().getField_id())
                 .put("field_value", getOrgNodeName(element, "RANK"))
-                .put("fieldCnName", getOrgNodeName(element, "RANK_DESCRIPTION"));
+                .put("fieldCnName", getOrgNodeName(element, "RANK_DESCRIPTION"))
+                .put("isDelete", isDelete);
         Map<String, Object> itemFieldAndCnName = getLocalItemId(paramJson, element);
         JSONArray andWhere = getWhereAndJson(element);
-        String teamItemId = getRemoteItem(element, paramJson, itemFieldAndCnName, andWhere,this,false);
+        String teamItemId = getRemoteItem(element, paramJson, itemFieldAndCnName, andWhere, this, false);
 
 //        String teamItemId = getCacheItemsId(JSONUtil.createObj().put("tableId", HbTablesId.team_name)
 //                .put("field_id", ((Team_Name) tableStuckCache.get("team_name")).getTeam_Code().getField_id())
@@ -151,16 +154,15 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
                         }
 
                     } else {
-                        String companyItemId = new CompanyImpl().getCacheItemId(element);
-                        String firDepartMentItemId = new FirDepartMentImpl().getCacheItemId(element);
-                        String sectionItemId = new Sec_DepartImpl().getCacheItemId(element);
-                        String sub_sectionItemId = new KeClassImpl().getCacheItemId(element);
-                        String cityItemId = new GroupImpl().getCacheItemId(element);
-                        String teamItemId = new TeamNameImpl().getCacheItemId(element);
-                        String postItemId = new PostNameImpl().getCacheItemId(element);
+                        String companyItemId = new CompanyImpl().getCacheItemId(element, false);
+                        String firDepartMentItemId = new FirDepartMentImpl().getCacheItemId(element, false);
+                        String sectionItemId = new Sec_DepartImpl().getCacheItemId(element, false);
+                        String sub_sectionItemId = new KeClassImpl().getCacheItemId(element, false);
+                        String cityItemId = new GroupImpl().getCacheItemId(element, false);
+                        String teamItemId = new TeamNameImpl().getCacheItemId(element, false);
+                        String postItemId = new PostNameImpl().getCacheItemId(element, false);
                         System.out.println(companyItemId + "-" + firDepartMentItemId + "-" + sectionItemId + "-" + sub_sectionItemId + "-" + cityItemId + "-" + teamItemId);
                     }
-
                 }
             }
 
@@ -199,14 +201,18 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
     @Override
     public JSONObject updateTable(JSONObject jsonObject, Element element) {
         JSONObject resultJson = JSONUtil.createObj();
-        getOrgItemsId(element);
+        String fieldCnName = jsonObject.getStr("fieldCnName");
+        resultJson.put("fieldCnName", fieldCnName);
+        //如果是获取人员信息的时候来查询组织就不需要去更新组织，直接返回即可
+        if (!StrUtil.isAllBlank(element.elementText("STAFF_NO"))) {
+            return resultJson.put("rspStatus", 0);
+        }
+        getOrgItemsId(element, false);
         team_name = (Team_Name) tableStuckCache.get("team_name");
 //        List<JSONObject> jsonArray = (List<JSONObject>) ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("fields");
 //        String cnName = ((JSONObject) ((JSONArray) jsonArray.stream().filter(p -> p.getStr("field_id").
 //                equals(team_name.getTeam_Name().getField_id())).findFirst().get().get("values")).get(0)).get("value").toString();
-        String fieldCnName = getOrgNodeName(element, "RANK_DESCRIPTION");
-        resultJson.put("fieldCnName", fieldCnName);
-        String leaderItemId = getLeaderItemId(element);
+
         String itemId = ((JSONObject) ((JSONArray) jsonObject.get("items")).get(0)).get("item_id").toString();
         JSONObject dataJson = JSONUtil.createObj().put(team_name.getTeam_Name().getField_id(), fieldCnName)
                 .put(team_name.getCompany_Name().getField_id(), JSONUtil.createArray().put(companyItemId))
@@ -215,9 +221,10 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
                 .put(team_name.getT_Class().getField_id(), JSONUtil.createArray().put(subSectionItemId))
                 .put(team_name.getGroup().getField_id(), JSONUtil.createArray().put(groupItemId));
         //如果本节点是最后一个组织节点，更新本组织负责人员
-//        if (isEndOrg(element) && !StrUtil.isBlank(element.elementText("Function_Leader"))) {
-//            dataJson.put(team_name.getLeaders().getField_id(), JSONUtil.createArray().put(leaderItemId));
-//        }
+        if (isEndOrg(element) && !StrUtil.isBlank(element.elementText("Function_Leader"))) {
+            String leaderItemId = getLeaderItemId(element);
+            dataJson.put(team_name.getLeaders().getField_id(), JSONUtil.createArray().put(leaderItemId));
+        }
         JSONObject paramJson = JSONUtil.createObj().put("item_ids", itemId).put("filter", JSONUtil.createObj().put("and",
                 JSONUtil.createArray().put(JSONUtil.createObj().put("field", team_name.getTeam_Code().getField_id())
                         .put("query", JSONUtil.createObj().put("eq", jsonObject.getStr("field_code"))))))
@@ -238,17 +245,42 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
      *
      * @param element
      */
-    public void getOrgItemsId(Element element) {
-        companyItemId = ((Map) ((Map) (tableStuckCache.get(CompanyImpl.companyItemsId))).
-                get(element.elementText("BRANCH"))).get("itemId").toString();
-        secDepartItemId = ((Map) ((Map) (tableStuckCache.get(Sec_DepartImpl.secDepartItemsId))).
-                get(getOrgNodeName(element, "SECTION"))).get("itemId").toString();
-        firDepartItemId = ((Map) ((Map) (tableStuckCache.get(FirDepartMentImpl.firDpartItemsId))).
-                get(getOrgNodeName(element, "DEPARTMENT"))).get("itemId").toString();
-        subSectionItemId = ((Map) ((Map) (tableStuckCache.get(KeClassImpl.keClassItemsId))).
-                get(getOrgNodeName(element, "SUB_SECTION"))).get("itemId").toString();
-        groupItemId = ((Map) ((Map) (tableStuckCache.get(GroupImpl.groupItemsId))).
-                get(getOrgNodeName(element, "CITY"))).get("itemId").toString();
+    public Boolean getOrgItemsId(Element element, Boolean isDelete) {
+        if (StrUtil.isAllBlank(element.elementText("STAFF_NO"))) {
+            companyItemId = new CompanyImpl().getCacheItemId(element, isDelete);
+            if ("".equals(companyItemId)) {
+                return false;
+            }
+            firDepartItemId = new FirDepartMentImpl().getCacheItemId(element, isDelete);
+            if ("".equals(firDepartItemId)) {
+                return false;
+            }
+            secDepartItemId = new Sec_DepartImpl().getCacheItemId(element, isDelete);
+            if ("".equals(secDepartItemId)) {
+                return false;
+            }
+            subSectionItemId = new KeClassImpl().getCacheItemId(element, isDelete);
+            if ("".equals(subSectionItemId)) {
+                return false;
+            }
+            groupItemId = new GroupImpl().getCacheItemId(element, isDelete);
+            if ("".equals(groupItemId)) {
+                return false;
+            }
+        } else {
+            companyItemId = ((Map) ((Map) (tableStuckCache.get(CompanyImpl.companyItemsId))).
+                    get(element.elementText("BRANCH"))).get("itemId").toString();
+            firDepartItemId = ((Map) ((Map) (tableStuckCache.get(FirDepartMentImpl.firDpartItemsId))).
+                    get(getOrgNodeName(element, "DEPARTMENT"))).get("itemId").toString();
+            secDepartItemId = ((Map) ((Map) (tableStuckCache.get(Sec_DepartImpl.secDepartItemsId))).
+                    get(getOrgNodeName(element, "SECTION"))).get("itemId").toString();
+            subSectionItemId = ((Map) ((Map) (tableStuckCache.get(Sec_DepartImpl.secDepartItemsId))).
+                    get(getOrgNodeName(element, "SUB_SECTION"))).get("itemId").toString();
+            groupItemId = ((Map) ((Map) (tableStuckCache.get(Sec_DepartImpl.secDepartItemsId))).
+                    get(getOrgNodeName(element, "CITY"))).get("itemId").toString();
+        }
+
+        return true;
     }
 
     /**

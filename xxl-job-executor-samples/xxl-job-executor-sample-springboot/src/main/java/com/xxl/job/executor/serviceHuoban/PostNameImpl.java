@@ -22,11 +22,12 @@ public class PostNameImpl extends BaseHuoBanServ implements IHuoBanService {
     PostName postName = new PostName();
 
     @Override
-    public String getCacheItemId(Element element) {
+    public String getCacheItemId(Element element,Boolean isDetele) {
         JSONObject paramJson = JSONUtil.createObj().put("tableId", HbTablesId.post_name).
                 put("field_id", ((PostName) tableStuckCache.get(PostNameImpl.postNameStruc)).getPostCode().getField_id()).
                 put("field_value", element.elementText("POSITION"))
-                .put("fieldCnName", element.elementTextTrim("JOB_TITLE"));
+                .put("fieldCnName", element.elementTextTrim("JOB_TITLE"))
+                .put("isDelete",isDetele);
         Map<String, Object> itemFieldAndCnName = getLocalItemId(paramJson, element);
         JSONArray andWhere = JSONUtil.createArray().put(JSONUtil.createObj().put("field", paramJson.get("field_id"))
                 .put("query", JSONUtil.createObj().put("eq", paramJson.get("field_value"))));
