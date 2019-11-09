@@ -59,6 +59,8 @@ public class PersonHbJobHandler extends IJobHandler {
         //从伙伴接口获取xml组织结构(当任务高度传进来的参数为空的时候取当前的日期，否则取参数日期)
         String xml = VantopServ.PER_INF_WBS_ORG(startDate == null ? DateUtil.format(DateTime.now(), "dd/MM/yyyy") : startDate.toString(),
                 endDate == null ? DateUtil.format(DateTime.now(), "dd/MM/yyyy") : endDate.toString());
+        System.out.println("从HR接口中读取"+startDate+"至"+endDate+"组织异动信息完成，开始更新组织节点！");
+
         //读取组织结构
         List<Team_Name> team_names = iHuoBanService.readStringXml(xml);
 

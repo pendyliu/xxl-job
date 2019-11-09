@@ -103,20 +103,10 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
                 while (iters.hasNext()) {
                     Element element = (Element) iters.next();
                     // 拿到STAFF下的子节点ROW下的字节点组织节点的值
-                    System.out.println("开始更新：" + element.elementText("STAFF_NO"));
-//                    if (!element.elementText("STAFF_NO").equals("G98778")) {
-//                        continue;
-//                    }
-                    if (Convert.toInt(StrUtil.emptyToDefault(element.elementText("isLeader"), "0")) > 0) {
-                        //判断这个人是否有伙伴帐号存在
-                        getMemberId(element.elementText("MOBILE_PHONE"));
+                    if ("".equals(StrUtil.nullToDefault(element.elementText("BRANCH"),""))) {
+                        continue;
                     }
-
-                    //获取这个人的上长的ItemId
-                    superiorItemId = getSuperiorItemId(element);
-
-                    String staffInfoItemId = getCacheItemId(element, false);
-                    XxlJobLogger.log("工号：" + element.elementText("STAFF_NO") + "  ItemId：" + staffInfoItemId + "更新成功！");
+                    readStaffNode(element);
                 }
             }
         } catch (DocumentException e) {
@@ -128,6 +118,19 @@ public class StaffInfoImpl extends BaseHuoBanServ implements IHuoBanService {
         }
         System.out.println("人员更新完成！");
         return null;
+    }
+
+    private void readStaffNode(Element element) {
+        System.out.println("开始更新：" + element.elementText("STAFF_NO"));
+        if (Convert.toInt(StrUtil.emptyToDefault(element.elementText("isLeader"), "0")) > 0) {
+            //判断这个人是否有伙伴帐号存在
+            getMemberId(element.elementText("MOBILE_PHONE"));
+        }
+
+        //获取这个人的上长的ItemId
+        superiorItemId = getSuperiorItemId(element);
+        String staffInfoItemId = getCacheItemId(element, false);
+        XxlJobLogger.log("工号：" + element.elementText("STAFF_NO") + "  ItemId：" + staffInfoItemId + "更新成功！");
     }
 
     @Override

@@ -121,8 +121,6 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
             doc = DocumentHelper.parseText(xml.replace(xml.substring(0, xml.indexOf("?>") + 2), ""));
             // 获取根节点
             Element rootElt = doc.getRootElement();
-            // 拿到根节点的名称
-            System.out.println("根节点：" + rootElt.getName());
             // 获取根节点下的子节点STAFF
             Iterator iter = rootElt.elementIterator("STAFF");
             // 遍历STAFF节点
@@ -131,8 +129,6 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
                 // 获取子节点STAFF下的子节点ROW
                 Iterator iters = recordEle.elementIterator("ROW");
                 // 遍历ROW节点下的Response节点
-                Company companyStruc = (Company) tableStuckCache.get("company");
-
                 while (iters.hasNext()) {
                     Element element = (Element) iters.next();
                     if ("".equals(StrUtil.nullToDefault(element.elementText("BRANCH"), ""))) {
@@ -274,9 +270,9 @@ public class TeamNameImpl extends BaseHuoBanServ implements IHuoBanService {
                     get(getOrgNodeName(element, "DEPARTMENT"))).get("itemId").toString();
             secDepartItemId = ((Map) ((Map) (tableStuckCache.get(Sec_DepartImpl.secDepartItemsId))).
                     get(getOrgNodeName(element, "SECTION"))).get("itemId").toString();
-            subSectionItemId = ((Map) ((Map) (tableStuckCache.get(Sec_DepartImpl.secDepartItemsId))).
+            subSectionItemId = ((Map) ((Map) (tableStuckCache.get(KeClassImpl.keClassItemsId))).
                     get(getOrgNodeName(element, "SUB_SECTION"))).get("itemId").toString();
-            groupItemId = ((Map) ((Map) (tableStuckCache.get(Sec_DepartImpl.secDepartItemsId))).
+            groupItemId = ((Map) ((Map) (tableStuckCache.get(GroupImpl.groupItemsId))).
                     get(getOrgNodeName(element, "CITY"))).get("itemId").toString();
         }
 

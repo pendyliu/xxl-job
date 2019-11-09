@@ -24,8 +24,8 @@ public class PostNameImpl extends BaseHuoBanServ implements IHuoBanService {
     @Override
     public String getCacheItemId(Element element,Boolean isDetele) {
         JSONObject paramJson = JSONUtil.createObj().put("tableId", HbTablesId.post_name).
-                put("field_id", ((PostName) tableStuckCache.get(PostNameImpl.postNameStruc)).getPostCode().getField_id()).
-                put("field_value", element.elementText("POSITION"))
+                put("field_id", ((PostName) tableStuckCache.get(PostNameImpl.postNameStruc)).getPostCode().getField_id())
+                .put("field_value", element.elementText("POSITION"))
                 .put("fieldCnName", element.elementTextTrim("JOB_TITLE"))
                 .put("isDelete",isDetele);
         Map<String, Object> itemFieldAndCnName = getLocalItemId(paramJson, element);
@@ -65,7 +65,7 @@ public class PostNameImpl extends BaseHuoBanServ implements IHuoBanService {
         String tableId = HbTablesId.post_name;
         PostName postName = (PostName) tableStuckCache.get(postNameStruc);
         JSONObject reuslt = null;
-        if ("".equals(StrUtil.nullToDefault(element.elementText("POSITION"), ""))) {
+        if (!"".equals(StrUtil.nullToDefault(element.elementText("POSITION"), ""))) {
             JSONObject paramJson = JSONUtil.createObj().put("fields", JSONUtil.createObj().
                     put(postName.getPostCode().getField_id(), element.elementText("POSITION"))
                     .put(postName.getPostName().getField_id(), element.elementText("JOB_TITLE")));

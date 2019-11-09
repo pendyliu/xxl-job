@@ -188,6 +188,14 @@ public abstract class BaseHuoBanServ<T> {
             String resMsg = JSONUtil.parseObj(UnicodeUtil.toString(StrUtil.utf8Str(response.bodyBytes()))).getStr("message");
             XxlJobLogger.log(resMsg);
             System.out.println(resMsg);
+            if ("表格正在批量更新数据，请稍后重试".equals(resMsg)){
+                try {
+                    Thread.sleep(1000);
+                    updateTable(tableId,paramJson);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         }
         return response.getStatus();
     }
@@ -265,7 +273,7 @@ public abstract class BaseHuoBanServ<T> {
         String res = "";
         switch (orgNodeCode) {
             case "DEPARTMENT":
-                res = "A9999".equals(element.elementText("DEPARTMENT")) ? element.elementText("BRANCH") + "b1" : element.elementText("DEPARTMENT");
+                res = "A9999".equals(element.elementText("DEPARTMENT"))||"".equals(element.elementText("DEPARTMENT")) ? element.elementText("BRANCH") + "b1" : element.elementText("DEPARTMENT");
                 break;
             case "DEPARTMENT_DESCRIPTION":
                 res = "/".equals(StrUtil.nullToDefault(element.elementText("DEPARTMENT_DESCRIPTION"), "/")) || "".equals(StrUtil.nullToDefault(element.elementText("DEPARTMENT_DESCRIPTION"), "")) ?
@@ -273,7 +281,8 @@ public abstract class BaseHuoBanServ<T> {
                 break;
             case "SECTION":
                 res = "A9999".equals(element.elementText("SECTION")) || "".equals(element.elementText("SECTION"))
-                        ? ("A9999".equals(element.elementText("DEPARTMENT")) ? element.elementText("BRANCH") + "b1" : element.elementText("DEPARTMENT"))
+                        ? ("A9999".equals(element.elementText("DEPARTMENT"))||"".equals(element.elementText("DEPARTMENT"))
+                        ? element.elementText("BRANCH") + "b1" : element.elementText("DEPARTMENT"))
                         + "b2" : element.elementText("SECTION");
                 break;
             case "SECTION_DESCRIPTION":
@@ -285,7 +294,7 @@ public abstract class BaseHuoBanServ<T> {
             case "SUB_SECTION":
                 res = "A9999".equals(element.elementText("SUB_SECTION")) || "".equals(element.elementText("SUB_SECTION"))
                         ? ("A9999".equals(element.elementText("SECTION")) || "".equals(element.elementText("SECTION"))
-                        ? ("A9999".equals(element.elementText("DEPARTMENT")) ?
+                        ? ("A9999".equals(element.elementText("DEPARTMENT"))||"".equals(element.elementText("DEPARTMENT")) ?
                         element.elementText("BRANCH") + "b1" : element.elementText("DEPARTMENT"))
                         + "b2" : element.elementText("SECTION")) + "b3" : element.elementText("SUB_SECTION");
                 break;
@@ -300,7 +309,7 @@ public abstract class BaseHuoBanServ<T> {
                 res = "A9999".equals(element.elementText("CITY")) || "".equals(element.elementText("CITY"))
                         ? ("A9999".equals(element.elementText("SUB_SECTION")) || "".equals(element.elementText("SUB_SECTION")) ?
                         ("A9999".equals(element.elementText("SECTION")) || "".equals(element.elementText("SECTION"))
-                                ? ("A9999".equals(element.elementText("DEPARTMENT")) ?
+                                ? ("A9999".equals(element.elementText("DEPARTMENT")) ||"".equals(element.elementText("DEPARTMENT"))?
                                 element.elementText("BRANCH") + "b1" : element.elementText("DEPARTMENT"))
                                 + "b2" : element.elementText("SECTION")) + "b3" : element.elementText("SUB_SECTION")) + "b4" : element.elementText("CITY");
                 break;
